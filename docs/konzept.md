@@ -25,25 +25,30 @@ Die Module bauen aufeinander auf: Zeitgerüst → Jahresplanung → Wochenplanun
 
 ## 2 Begriffe
 
-| Begriff | Bedeutung |
-| --- | --- |
-| Schuljahr | Zeitraum mit Schultagen, Ferien und Feiertagen |
-| Lerngruppe | Die Schüler, die gemeinsam unterrichtet werden. Nicht gleich Klasse: Gruppen können geteilt oder klassenübergreifend sein |
-| Stundenplan | Wochenraster je Lerngruppe mit Gültigkeitszeitraum |
-| Unterrichtsblock | Aufeinanderfolgende Stunden einer Gruppe an einem Tag. Kleinste Einheit für Nachweis und Bewertung |
-| Katalog | Ein Lehrplan in einer bestimmten Version, als Baum aus Abschnitten und Kompetenzen |
-| Kompetenz | Eine Kompetenzerwartung aus einem Katalog oder eine selbst angelegte |
-| Abschnitt | Knoten im Katalog, der Kompetenzen bündelt (z. B. "1.5.2 Arbeiten"). Zugleich Satzgruppe fürs Zeugnis |
-| Inhalt | Stoff, Material oder Verfahren aus einem Lehrplan (z. B. Bohren, Massivholz). Wird nicht bewertet |
-| Themenbereich | Eigene Gliederung des Jahres, z. B. nach Material |
-| Lerneinheit | Werkstück, Kurs oder Themenschwerpunkt innerhalb eines Themenbereichs |
-| Beobachtung | Sternebewertung (1 bis 5) eines Schülers zu einer Kompetenz in einem Block |
-| Notiz | Freitext zu einem Schüler, optional an Block oder Kompetenz gebunden |
-| Zeugnisart | Konfigurierbare Art von Zeugnis mit Zeitraum und Zielzahl an Sätzen |
-| Satzbaustein | Satz zu einem Abschnitt in einer Stufe für eine Zeugnisart |
-| Leistungsnachweis | Benotete Leistung eines frei definierbaren Typs |
-| Rohmaterial | Material mit Einheit und Preis pro Einheit |
-| Stückliste | Materialmengen je Schüler für ein Werkstück |
+| Begriff | Im Code | Bedeutung |
+| --- | --- | --- |
+| Schuljahr | `school_year` | Zeitraum mit Schultagen, Ferien und Feiertagen |
+| Lerngruppe | `learning_group` | Die Schüler, die gemeinsam unterrichtet werden. Nicht gleich Klasse: Gruppen können geteilt oder klassenübergreifend sein |
+| Stundenplan | `timetable` | Wochenraster je Lerngruppe mit Gültigkeitszeitraum |
+| Unterrichtsblock | `lesson_block` | Aufeinanderfolgende Stunden einer Gruppe an einem Tag. Kleinste Einheit für Nachweis und Bewertung |
+| Katalog | `catalog` | Ein Lehrplan in einer bestimmten Version, als Baum aus Abschnitten und Kompetenzen |
+| Kompetenz | `competency` | Eine Kompetenzerwartung aus einem Katalog oder eine selbst angelegte |
+| Abschnitt | `section` | Knoten im Katalog, der Kompetenzen bündelt (z. B. "1.5.2 Arbeiten"). Zugleich Satzgruppe fürs Zeugnis |
+| Inhalt | `content_item` | Stoff, Material oder Verfahren aus einem Lehrplan (z. B. Bohren, Massivholz). Wird nicht bewertet |
+| Themenbereich | `topic_area` | Eigene Gliederung des Jahres, z. B. nach Material |
+| Lerneinheit | `learning_unit` | Werkstück, Kurs oder Themenschwerpunkt innerhalb eines Themenbereichs |
+| Beobachtung | `observation` | Sternebewertung (1 bis 5) eines Schülers zu einer Kompetenz in einem Block |
+| Notiz | `note` | Freitext zu einem Schüler, optional an Block oder Kompetenz gebunden |
+| Zeugnisart | `report_type` | Konfigurierbare Art von Zeugnis mit Zeitraum und Zielzahl an Sätzen |
+| Satzbaustein | `phrase` | Satz zu einem Abschnitt in einer Stufe für eine Zeugnisart |
+| Leistungsnachweis | `assessment` | Benotete Leistung eines frei definierbaren Typs |
+| Rohmaterial | `material` | Material mit Einheit und Preis pro Einheit |
+| Stückliste | `bill_of_materials` | Materialmengen je Schüler für ein Werkstück |
+| Schüler | `student` | Mitglied einer oder mehrerer Lerngruppen |
+| Note | `grade` | Ganze Note von 1 bis 6 |
+| Kriterienraster | `rubric` | Teilkriterien mit Punkten für einen Leistungsnachweis |
+
+Die Spalte "Im Code" ist verbindlich. Bezeichner im Code folgen diesem Glossar. Neue Fachbegriffe werden zuerst hier eingetragen.
 
 ## 3 Kompetenzkatalog
 
@@ -230,9 +235,24 @@ Nicht im Startkatalog: 1.1 und alle weiteren entwicklungsbezogenen Abschnitte, 1
 5. Die 130 Satzbausteine für den Startkatalog müssen geschrieben werden.
 6. Welche Kompetenzen des Startkatalogs werden für die 7. Klasse tatsächlich ausgewählt?
 7. Datenmodell: Objekte und Beziehungen aus den Regeln ableiten.
-8. Reihenfolge der Umsetzung: Welche Module bilden die erste nutzbare Version?
 
-## 14 Arbeitsregeln für die Umsetzung
+## 14 Umsetzungsreihenfolge
+
+Es gibt keinen Zeitdruck. Die Anwendung wird 2026 nicht produktiv genutzt. Jede Stufe ist für sich nutzbar und wird über einen oder mehrere Pull Requests umgesetzt.
+
+| Stufe | Inhalt | Ergebnis |
+| --- | --- | --- |
+| 1 | Grundgerüst, Login, Schuljahr, Lerngruppen, Schüler, Stundenplan, Unterrichtsblöcke | Alle Blöcke des Jahres und das Stundenbudget sind sichtbar |
+| 2 | Katalogimport, Themenbereiche, Lerneinheiten, Kompetenzzuordnung | Die Jahresplanung steht |
+| 3 | Wochenansicht und Unterrichtsnachweis | Der Nachweis entsteht aus der Planung |
+| 4 | Anwesenheit, Sternebewertung, Notizen | Die Beobachtungen laufen |
+| 5 | Satzbausteine und Zeugnistexte | Zeugnisbemerkungen entstehen aus den Beobachtungen |
+| 6 | Noten mit Kriterienraster | Die Notenverwaltung ist komplett |
+| 7 | Rohmaterial, Stücklisten, Kostenauswertung | Die Kostenkalkulation ist komplett |
+
+Das Datenmodell wird grob über alle Stufen entworfen und nur für die jeweils nächste Stufe im Detail festgelegt.
+
+## 15 Arbeitsregeln für die Umsetzung
 
 Diese Regeln gelten für die Zusammenarbeit beim Programmieren.
 
@@ -240,3 +260,4 @@ Diese Regeln gelten für die Zusammenarbeit beim Programmieren.
 - A2: Es wird nie einfach losgebaut. Geplante Änderungen werden zuerst vorgestellt: was geändert wird, warum, und welche Dateien betroffen sind. Umgesetzt wird erst nach ausdrücklicher Zustimmung.
 - A3: Gearbeitet wird mit Pull Requests. Jede Änderung kommt auf einen eigenen Branch und als Pull Request ins Repository. Der Auftraggeber testet und merged selbst. Es wird nie direkt auf den Hauptbranch geschrieben und nie selbst gemerged.
 - A4: Dieses Dokument ist die Grundlage. Weicht eine Umsetzung von einer Regel ab, wird zuerst das Dokument geändert, dann der Code.
+- A5: Code, Bezeichner und Kommentare sind englisch. Dokumentation, Oberfläche, Commit-Messages, Pull Requests und Kommunikation sind deutsch. Die Anwendung ist einsprachig deutsch.

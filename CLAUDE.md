@@ -19,4 +19,7 @@ Diese Regeln gelten in jeder Sitzung und haben Vorrang vor Tempo.
 
 ## Sprache
 
-Fachbegriffe, Dokumentation und Kommunikation sind auf Deutsch.
+- Code, Bezeichner und Kommentare: Englisch.
+- Dokumentation, Oberfläche der Anwendung, Commit-Messages, Pull Requests und Kommunikation: Deutsch.
+- Bezeichner für Fachbegriffe folgen dem Glossar in `docs/konzept.md`, Abschnitt 2. Neue Fachbegriffe werden zuerst dort eingetragen.
+- Die Anwendung ist einsprachig deutsch. Keine Mehrsprachigkeit einbauen.

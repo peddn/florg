@@ -16,6 +16,7 @@ Diese Regeln gelten in jeder Sitzung und haben Vorrang vor Tempo.
 - Backend: Rust mit SQLite über eine Zwischenschicht. Nur verwenden, was auch PostgreSQL kann (siehe `docs/datenmodell.md`, Grundsätze).
 - Frontend: Vue.js mit Pinia und Router, Tailwind CSS
 - Mobile first, kein Offline-Betrieb, eine Instanz pro Lehrer
+- Sicherheit hat Vorrang vor Komfort und Tempo. Anmeldung nur per E-Mail-Link (`docs/konzept.md`, Regeln L1 bis L13). Kryptografie, Zufallszahlen, Hashing und Sitzungsverwaltung nur aus etablierten Bibliotheken, nie selbst schreiben.
 
 ## Sprache
 

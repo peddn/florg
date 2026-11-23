@@ -13,7 +13,9 @@ Der Hauptnutzen ist Zeitersparnis: Der Unterrichtsnachweis entsteht aus der Plan
 | Zielgruppe | Fachlehrer an Förderschule, Mittelschule und Realschule; generischer Ansatz, nicht auf ein Fach festgelegt |
 | Start | Förderschwerpunkt Lernen, Technik in Jahrgangsstufe 7 |
 | Lizenz | Open Source |
-| Betrieb | Eine Instanz pro Lehrer auf einem privat gemieteten Server; ein Login, keine Rollen |
+| Betrieb | Eine Instanz pro Lehrer auf einem privat gemieteten Server; ein Konto, keine Rollen |
+| Anmeldung | Nur per Link an die hinterlegte E-Mail-Adresse, kein Passwort |
+| Sicherheit | Hat Vorrang vor Komfort und Tempo |
 | Geräte | Mobile first; Zeugnisphase für Laptop oder Tablet ausgelegt |
 | Offline | Nicht nötig |
 | Backend | Rust mit SQLite über eine Zwischenschicht; ein späterer Wechsel zu PostgreSQL bleibt möglich |
@@ -48,6 +50,8 @@ Die Module bauen aufeinander auf: Zeitgerüst → Jahresplanung → Wochenplanun
 | Note | `grade` | Ganze Note von 1 bis 6 |
 | Kriterienraster | `rubric` | Teilkriterien mit Punkten für einen Leistungsnachweis |
 | Konto | `account` | Das eine Benutzerkonto der Instanz |
+| Anmelde-Token | `login_token` | Einmaliger, kurz gültiger Schlüssel in einem Anmeldelink |
+| Sitzung | `session` | Angemeldeter Zustand auf einem Gerät |
 | Unterrichtsfreie Zeit | `school_free_period` | Ferien, Feiertag oder sonstiger freier Tag |
 | Fach | `subject` | Unterrichtsfach einer Lerngruppe |
 | Klasse | `school_class` | Klasse in einem Schuljahr, z. B. 7a |
@@ -209,6 +213,22 @@ Nicht im Startkatalog: 1.1 und alle weiteren entwicklungsbezogenen Abschnitte, 1
 
 ## 11 Querschnittsthemen
 
+### Anmeldung und Sicherheit
+
+- L1: Es gibt nur einen Anmeldeweg: einen Link per E-Mail. Passwörter gibt es nicht.
+- L2: Die Anmeldeseite hat kein Eingabefeld. Der Link geht immer an die im Konto hinterlegte Adresse.
+- L3: Ein Anmelde-Token ist zufällig mit mindestens 128 Bit, einmal gültig und läuft nach 15 Minuten ab.
+- L4: In der Datenbank steht nur der Hash des Tokens.
+- L5: Der Link funktioniert nur in dem Browser, der ihn angefordert hat.
+- L6: Der Link meldet nicht direkt an, sondern führt auf eine Seite mit Bestätigungsknopf. So verbrauchen Mail-Scanner das Token nicht.
+- L7: Anforderungen von Links sind begrenzt, damit niemand das Postfach flutet.
+- L8: Eine Sitzung gilt 30 Tage ab der letzten Nutzung. Das Sitzungs-Cookie ist `HttpOnly`, `Secure` und `SameSite`.
+- L9: "Überall abmelden" beendet sofort alle Sitzungen.
+- L10: Die Anwendung ist nur über HTTPS erreichbar.
+- L11: Die SMTP-Zugangsdaten stehen in einer Konfigurationsdatei oder in Umgebungsvariablen auf dem Server, nie in der Datenbank und nicht in der Oberfläche. Die Verbindung zum Mailserver ist verschlüsselt.
+- L12: Drei Befehle auf dem Server gehören zum Betrieb: Konto beim ersten Start anlegen, Testmail verschicken, Anmeldelink als Notzugang ausgeben.
+- L13: Kryptografie, Zufallszahlen, Hashing und Sitzungsverwaltung kommen aus etablierten Bibliotheken und werden nicht selbst geschrieben.
+
 ### Datenschutz
 
 - Die Daten liegen auf einem vom Lehrer privat gemieteten Server. Ob das für Schülerdaten zulässig ist, klärt jeder Nutzer mit Schulleitung oder Datenschutzbeauftragtem. Dieses Dokument trifft dazu keine rechtliche Aussage.
@@ -226,6 +246,9 @@ Nicht im Startkatalog: 1.1 und alle weiteren entwicklungsbezogenen Abschnitte, 1
 
 ## 12 Nicht im Umfang
 
+- Anmeldung mit Passwort
+- Passkeys (später möglich, wenn der E-Mail-Link im Alltag stört)
+- Eigener Mailserver und SMTP-Einstellungen in der Oberfläche
 - Mehrbenutzerbetrieb, Rollen und Rechte
 - Offline-Betrieb und Synchronisation
 - Bewertung entwicklungsbezogener Kompetenzen

@@ -21,6 +21,8 @@ Bezeichner folgen dem Glossar in `docs/konzept.md`, Abschnitt 2.
 
 ```mermaid
 erDiagram
+    account ||--o{ login_token : fordert_an
+    account ||--o{ session : hat
     school_year ||--o{ school_free_period : hat
     school_year ||--o{ school_class : hat
     school_year ||--o{ learning_group : hat
@@ -70,7 +72,7 @@ erDiagram
 
 | Stufe | Objekte | Dockt an |
 | --- | --- | --- |
-| 1 Zeitgerüst | `account`, `school_year`, `school_free_period`, `subject`, `school_class`, `student`, `class_membership`, `learning_group`, `group_membership`, `timetable`, `timetable_entry`, `lesson_block` | – |
+| 1 Zeitgerüst | `account`, `login_token`, `session`, `school_year`, `school_free_period`, `subject`, `school_class`, `student`, `class_membership`, `learning_group`, `group_membership`, `timetable`, `timetable_entry`, `lesson_block` | – |
 | 2 Jahresplanung | `catalog`, `section`, `competency`, `content_item`, `topic_area`, `learning_unit` sowie die Zuordnungen von Kompetenzen zu Lerngruppe, Themenbereich und Lerneinheit | `learning_group`, `lesson_block` |
 | 3 Unterrichtsnachweis | `lesson_record`, `absence` | `lesson_block`, `student` |
 | 4 Beobachtung | `observation`, `note` | `lesson_block`, `student`, `competency` |
@@ -94,9 +96,40 @@ Das eine Konto der Instanz.
 | Feld | Typ | Pflicht | Bedeutung |
 | --- | --- | --- | --- |
 | `id` | Ganzzahl | ja | Primärschlüssel |
-| `username` | Text | ja | Anmeldename, eindeutig |
-| `password_hash` | Text | ja | Passwort-Hash, nie das Passwort selbst |
+| `email` | Text | ja | Adresse, an die Anmeldelinks gehen |
 | `display_name` | Text | nein | Name für Ausgaben |
+
+Es gibt kein Passwort. Die Anmeldung läuft nur über einen Link per E-Mail (siehe `docs/konzept.md`, Abschnitt 11, Regeln L1 bis L13).
+
+### login_token
+
+Ein angeforderter Anmeldelink.
+
+| Feld | Typ | Pflicht | Bedeutung |
+| --- | --- | --- | --- |
+| `id` | Ganzzahl | ja | Primärschlüssel |
+| `account_id` | Fremdschlüssel | ja | Konto |
+| `token_hash` | Text | ja | Hash des Tokens, eindeutig. Das Token selbst wird nie gespeichert |
+| `browser_binding_hash` | Text | ja | Hash eines Werts, der nur im anfordernden Browser liegt |
+| `expires_at` | Zeitpunkt | ja | Ablauf, 15 Minuten nach Anforderung |
+| `used_at` | Zeitpunkt | nein | Zeitpunkt der Einlösung. Gesetzt bedeutet: verbraucht |
+
+Abgelaufene und verbrauchte Token werden regelmäßig gelöscht.
+
+### session
+
+Eine angemeldete Sitzung auf einem Gerät.
+
+| Feld | Typ | Pflicht | Bedeutung |
+| --- | --- | --- | --- |
+| `id` | Ganzzahl | ja | Primärschlüssel |
+| `account_id` | Fremdschlüssel | ja | Konto |
+| `session_hash` | Text | ja | Hash der Sitzungskennung, eindeutig. Die Kennung selbst liegt nur im Cookie |
+| `last_used_at` | Zeitpunkt | ja | Letzte Nutzung |
+| `expires_at` | Zeitpunkt | ja | Ablauf, 30 Tage nach der letzten Nutzung |
+| `device_label` | Text | nein | Kurze Gerätebeschreibung für die Liste der Sitzungen |
+
+"Überall abmelden" löscht alle Sitzungen des Kontos.
 
 ### school_year
 
@@ -239,7 +272,8 @@ Je Lerngruppe, Datum und erster Stunde gibt es höchstens einen Block.
 - **Schule als eigenes Objekt.** `school_class.school_name` genügt. Ein eigenes Objekt lohnt erst, wenn Schulen unterschiedliche freie Tage brauchen.
 - **Uhrzeiten der Stunden.** Stunden sind nummeriert. Uhrzeiten können später als eigene kleine Tabelle dazukommen, ohne bestehende Tabellen zu ändern.
 - **Samstage und A/B-Wochen.** Nicht vorgesehen.
-- **Sitzungen und Passwort-Zurücksetzen.** Das gehört zur technischen Umsetzung des Logins und wird dort entschieden.
+- **Passwörter.** Es gibt keine, also auch kein Zurücksetzen.
+- **SMTP-Zugangsdaten.** Sie stehen in der Konfiguration auf dem Server und nicht in der Datenbank.
 
 ## Offene Fragen zu Stufe 1
 

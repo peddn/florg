@@ -16,7 +16,7 @@ Der Hauptnutzen ist Zeitersparnis: Der Unterrichtsnachweis entsteht aus der Plan
 | Betrieb | Eine Instanz pro Lehrer auf einem privat gemieteten Server; ein Login, keine Rollen |
 | Geräte | Mobile first; Zeugnisphase für Laptop oder Tablet ausgelegt |
 | Offline | Nicht nötig |
-| Backend | Rust mit SQL-Datenbank |
+| Backend | Rust mit SQLite über eine Zwischenschicht; ein späterer Wechsel zu PostgreSQL bleibt möglich |
 | Frontend | Vue.js mit Pinia und Router, Tailwind CSS |
 | Mengengerüst | 8 bis 10 Gruppen, je bis 16 Schüler (mehr möglich), etwa 130 bis 160 Schüler je Instanz |
 | Ausgaben | Zeugnisbemerkungen, Noten, Leistungsübersichten, Kostenkalkulationen |
@@ -47,6 +47,16 @@ Die Module bauen aufeinander auf: Zeitgerüst → Jahresplanung → Wochenplanun
 | Schüler | `student` | Mitglied einer oder mehrerer Lerngruppen |
 | Note | `grade` | Ganze Note von 1 bis 6 |
 | Kriterienraster | `rubric` | Teilkriterien mit Punkten für einen Leistungsnachweis |
+| Konto | `account` | Das eine Benutzerkonto der Instanz |
+| Unterrichtsfreie Zeit | `school_free_period` | Ferien, Feiertag oder sonstiger freier Tag |
+| Fach | `subject` | Unterrichtsfach einer Lerngruppe |
+| Klasse | `school_class` | Klasse in einem Schuljahr, z. B. 7a |
+| Stundenplaneintrag | `timetable_entry` | Eine Stunde im Wochenraster eines Stundenplans |
+| Unterrichtsnachweis | `lesson_record` | Dokumentation eines gehaltenen Unterrichtsblocks |
+| Fehlzeit | `absence` | Abwesenheit eines Schülers in einem Unterrichtsblock |
+| Zeugnistext | `report_text` | Fertiger Fließtext je Schüler, Fach und Zeugnisart |
+| Nachweis-Typ | `assessment_type` | Frei anlegbare Art von Leistungsnachweis |
+| Notenschlüssel | `grading_scale` | Umrechnung von Punkten in Noten |
 
 Die Spalte "Im Code" ist verbindlich. Bezeichner im Code folgen diesem Glossar. Neue Fachbegriffe werden zuerst hier eingetragen.
 
@@ -234,7 +244,7 @@ Nicht im Startkatalog: 1.1 und alle weiteren entwicklungsbezogenen Abschnitte, 1
 4. Format der Importdateien für Kataloge und Satzsammlungen.
 5. Die 130 Satzbausteine für den Startkatalog müssen geschrieben werden.
 6. Welche Kompetenzen des Startkatalogs werden für die 7. Klasse tatsächlich ausgewählt?
-7. Datenmodell: Objekte und Beziehungen aus den Regeln ableiten.
+7. Datenmodell: steht in `docs/datenmodell.md`, im Detail bisher für Stufe 1.
 
 ## 14 Umsetzungsreihenfolge
 

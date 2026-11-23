@@ -127,7 +127,6 @@ Eine angemeldete Sitzung auf einem Gerät.
 | `session_hash` | Text | ja | Hash der Sitzungskennung, eindeutig. Die Kennung selbst liegt nur im Cookie |
 | `last_used_at` | Zeitpunkt | ja | Letzte Nutzung |
 | `expires_at` | Zeitpunkt | ja | Ablauf, 30 Tage nach der letzten Nutzung |
-| `device_label` | Text | nein | Kurze Gerätebeschreibung für die Liste der Sitzungen |
 
 "Überall abmelden" löscht alle Sitzungen des Kontos.
 
@@ -171,7 +170,6 @@ Eine Klasse in einem Schuljahr. Die "7a" des nächsten Jahres ist ein neuer Date
 | `school_year_id` | Fremdschlüssel | ja | Schuljahr |
 | `name` | Text | ja | z. B. "7a", eindeutig je Schuljahr |
 | `grade_level` | Ganzzahl | ja | Jahrgangsstufe |
-| `school_name` | Text | nein | Nur nötig, wenn an mehreren Schulen unterrichtet wird |
 
 ### student
 
@@ -226,6 +224,8 @@ Ein Stundenplan mit Gültigkeitszeitraum. Ändert sich der Plan während des Jah
 | `name` | Text | ja | z. B. "ab September" |
 | `valid_from` | Datum | ja | Erster Tag der Gültigkeit |
 | `valid_to` | Datum | nein | Leer bedeutet: bis Schuljahresende |
+| `cycle_length` | Ganzzahl | ja | 1 = jede Woche gleich, 2 = Wechsel von A- und B-Woche |
+| `cycle_anchor_date` | Datum | nein | Ein Tag in einer Schulwoche, die A-Woche ist. Pflicht bei `cycle_length` 2 |
 
 Die Gültigkeitszeiträume der Stundenpläne eines Schuljahres überschneiden sich nicht.
 
@@ -240,8 +240,9 @@ Eine einzelne Stunde im Wochenraster.
 | `learning_group_id` | Fremdschlüssel | ja | Lerngruppe |
 | `weekday` | Ganzzahl | ja | 1 = Montag bis 5 = Freitag |
 | `period` | Ganzzahl | ja | Nummer der Unterrichtsstunde am Tag |
+| `cycle_week` | Ganzzahl | nein | Leer = jede Woche, 1 = nur A-Woche, 2 = nur B-Woche |
 
-Je Stundenplan, Wochentag und Stunde gibt es höchstens einen Eintrag.
+Je Stundenplan, Wochentag, Stunde und Woche im Wechsel gibt es höchstens einen Eintrag. Ein Eintrag für jede Woche schließt Einträge für A oder B auf demselben Platz aus.
 
 ### lesson_block
 
@@ -258,9 +259,19 @@ Je Stundenplan, Wochentag und Stunde gibt es höchstens einen Eintrag.
 
 Je Lerngruppe, Datum und erster Stunde gibt es höchstens einen Block.
 
+### Regeln zum Vorfüllen der unterrichtsfreien Zeiten
+
+- D-F1: Beim Anlegen eines Schuljahres füllt florg `school_free_period` vor. Danach sind es normale Einträge, die geändert, gelöscht und ergänzt werden können.
+- D-F2: Feiertage werden berechnet und nicht als Daten mitgeliefert. Sie haben ein festes Datum oder hängen am Osterdatum. Der Buß- und Bettag ist der Mittwoch vor dem 23. November und an bayerischen Schulen unterrichtsfrei.
+- D-F3: Ferien kommen aus einer Datendatei im Repository, abgeschrieben aus der amtlichen Ferienordnung mit Quellenangabe. Die aktuelle Ferienordnung reicht bis zum Schuljahr 2029/30.
+- D-F4: Fehlt ein Schuljahr in der Datendatei, werden die Ferien von Hand eingetragen. Schulinterne freie Tage werden immer von Hand eingetragen.
+- D-F5: Mariä Himmelfahrt und das Augsburger Friedensfest gelten nur regional. Beide liegen in den Sommerferien und werden deshalb nicht gesondert behandelt.
+
 ### Regeln zur Erzeugung der Blöcke
 
 - D-B1: Für jeden Schultag eines Schuljahres, der in keiner unterrichtsfreien Zeit liegt, erzeugt florg aus dem an diesem Tag gültigen Stundenplan die Blöcke (Regel Z3).
+- D-B1a: Eine Schulwoche ist eine Kalenderwoche von Montag bis Freitag mit mindestens einem Schultag. Wochen, die ganz in unterrichtsfreie Zeiten fallen, sind keine Schulwochen.
+- D-B1b: Bei einem Stundenplan mit A/B-Wechsel zählen nur Schulwochen. Die Schulwoche des Ankerdatums ist eine A-Woche, die nächste Schulwoche eine B-Woche, dann wieder A. Ferien unterbrechen die Zählung, verschieben sie aber nicht: Nach den Ferien folgt die Woche, die vorher nicht dran war.
 - D-B2: Aufeinanderfolgende Stunden derselben Lerngruppe am selben Tag ergeben einen Block mit entsprechender Dauer (Z4).
 - D-B3: Ändern sich Stundenplan oder unterrichtsfreie Zeiten, werden nur Blöcke neu erzeugt, die in der Zukunft liegen, den Status `planned` haben und den Ursprung `generated`.
 - D-B4: Blöcke mit Status `held` oder `cancelled`, Blöcke mit Ursprung `manual` und Blöcke, an denen Daten hängen, werden nie automatisch geändert oder gelöscht. Passt ein solcher Block nicht mehr zum Stundenplan, zeigt florg das als Hinweis an.
@@ -269,14 +280,15 @@ Je Lerngruppe, Datum und erster Stunde gibt es höchstens einen Block.
 
 ## Bewusst weggelassen in Stufe 1
 
-- **Schule als eigenes Objekt.** `school_class.school_name` genügt. Ein eigenes Objekt lohnt erst, wenn Schulen unterschiedliche freie Tage brauchen.
+- **Schule als eigenes Objekt.** Eine Instanz bildet eine Schule ab. Wer an mehreren Schulen unterrichtet, betreibt mehrere Instanzen.
+- **Gerätebezeichnung an der Sitzung.** "Überall abmelden" genügt.
 - **Uhrzeiten der Stunden.** Stunden sind nummeriert. Uhrzeiten können später als eigene kleine Tabelle dazukommen, ohne bestehende Tabellen zu ändern.
-- **Samstage und A/B-Wochen.** Nicht vorgesehen.
+- **Samstage.** Nicht vorgesehen.
+- **Wechsel mit mehr als zwei Wochen.** `cycle_length` lässt nur 1 und 2 zu.
 - **Passwörter.** Es gibt keine, also auch kein Zurücksetzen.
 - **SMTP-Zugangsdaten.** Sie stehen in der Konfiguration auf dem Server und nicht in der Datenbank.
 
-## Offene Fragen zu Stufe 1
+## Offene Punkte zu Stufe 1
 
-1. Unterrichtest du an mehreren Schulen mit unterschiedlichen freien Tagen? Dann reicht `school_name` als Text nicht.
-2. Gibt es Stundenpläne mit A/B-Wochen oder 14-tägigem Rhythmus?
-3. Sollen Ferien und Feiertage von Hand eingetragen werden, oder soll es einen Import geben? Vorschlag: zuerst von Hand, weil es einmal im Jahr etwa 15 Einträge sind.
+1. Format der Ferien-Datendatei. Es wird mit der Umsetzung von Stufe 1 festgelegt.
+2. Zählt eine Woche mit nur einem oder zwei Schultagen als Schulwoche für den A/B-Wechsel? Regel D-B1a sagt ja. Das ist an der Schule zu prüfen.

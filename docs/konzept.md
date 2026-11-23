@@ -13,7 +13,7 @@ Der Hauptnutzen ist Zeitersparnis: Der Unterrichtsnachweis entsteht aus der Plan
 | Zielgruppe | Fachlehrer an Förderschule, Mittelschule und Realschule; generischer Ansatz, nicht auf ein Fach festgelegt |
 | Start | Förderschwerpunkt Lernen, Technik in Jahrgangsstufe 7 |
 | Lizenz | Open Source |
-| Betrieb | Eine Instanz pro Lehrer auf einem privat gemieteten Server; ein Konto, keine Rollen |
+| Betrieb | Eine Instanz pro Lehrer und Schule auf einem privat gemieteten Server; ein Konto, keine Rollen. Wer an mehreren Schulen unterrichtet, betreibt mehrere Instanzen |
 | Anmeldung | Nur per Link an die hinterlegte E-Mail-Adresse, kein Passwort |
 | Sicherheit | Hat Vorrang vor Komfort und Tempo |
 | Geräte | Mobile first; Zeugnisphase für Laptop oder Tablet ausgelegt |
@@ -121,7 +121,9 @@ Nicht im Startkatalog: 1.1 und alle weiteren entwicklungsbezogenen Abschnitte, 1
 ## 4 Modul Zeitgerüst
 
 - Z1: Ein Schuljahr hat Beginn, Ende, Ferien und Feiertage. Daraus ergeben sich die Schultage.
+- Z1a: Feiertage werden berechnet. Ferien kommen aus einer mitgelieferten Datendatei auf Grundlage der amtlichen Ferienordnung (derzeit bis Schuljahr 2029/30). Beim Anlegen eines Schuljahres füllt florg beides vor, alles bleibt von Hand änderbar.
 - Z2: Der Stundenplan ordnet Wochentag und Stunde einer Lerngruppe und einem Fach zu. Er hat einen Gültigkeitszeitraum, weil er sich unterjährig ändern kann.
+- Z2a: Ein Stundenplan kann im Wechsel von A- und B-Woche laufen. Gezählt werden nur Schulwochen, also Wochen mit mindestens einem Schultag.
 - Z3: Aus Schultagen und Stundenplan erzeugt florg alle Unterrichtsblöcke des Schuljahres.
 - Z4: Aufeinanderfolgende Stunden derselben Gruppe am selben Tag bilden automatisch einen Block. Ein Block hat eine Dauer in Unterrichtsstunden.
 - Z5: Ein Block lässt sich von Hand teilen, etwa wenn die zweite Stunde ausfällt.
@@ -223,7 +225,7 @@ Nicht im Startkatalog: 1.1 und alle weiteren entwicklungsbezogenen Abschnitte, 1
 - L6: Der Link meldet nicht direkt an, sondern führt auf eine Seite mit Bestätigungsknopf. So verbrauchen Mail-Scanner das Token nicht.
 - L7: Anforderungen von Links sind begrenzt, damit niemand das Postfach flutet.
 - L8: Eine Sitzung gilt 30 Tage ab der letzten Nutzung. Das Sitzungs-Cookie ist `HttpOnly`, `Secure` und `SameSite`.
-- L9: "Überall abmelden" beendet sofort alle Sitzungen.
+- L9: "Überall abmelden" beendet sofort alle Sitzungen. Eine Liste einzelner Geräte gibt es nicht.
 - L10: Die Anwendung ist nur über HTTPS erreichbar.
 - L11: Die SMTP-Zugangsdaten stehen in einer Konfigurationsdatei oder in Umgebungsvariablen auf dem Server, nie in der Datenbank und nicht in der Oberfläche. Die Verbindung zum Mailserver ist verschlüsselt.
 - L12: Drei Befehle auf dem Server gehören zum Betrieb: Konto beim ersten Start anlegen, Testmail verschicken, Anmeldelink als Notzugang ausgeben.

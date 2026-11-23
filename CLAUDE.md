@@ -1,6 +1,6 @@
 # florg – Projektanweisungen
 
-florg ("Fachlehrer Organizer") ist eine Webanwendung für bayerische Fachlehrer. Das fachliche Regelwerk steht in `docs/konzept.md`. Lies es, bevor du etwas planst oder änderst.
+florg ("Fachlehrer Organizer") ist eine Webanwendung für bayerische Fachlehrer. Das fachliche Regelwerk steht in `docs/konzept.md`, das Datenmodell in `docs/datenmodell.md`. Lies beide, bevor du etwas planst oder änderst.
 
 ## Arbeitsregeln
 
@@ -13,9 +13,10 @@ Diese Regeln gelten in jeder Sitzung und haben Vorrang vor Tempo.
 
 ## Technik
 
-- Backend: Rust mit SQL-Datenbank
+- Backend: Rust mit SQLite über eine Zwischenschicht. Nur verwenden, was auch PostgreSQL kann (siehe `docs/datenmodell.md`, Grundsätze).
 - Frontend: Vue.js mit Pinia und Router, Tailwind CSS
 - Mobile first, kein Offline-Betrieb, eine Instanz pro Lehrer
+- Sicherheit hat Vorrang vor Komfort und Tempo. Anmeldung nur per E-Mail-Link (`docs/konzept.md`, Regeln L1 bis L13). Kryptografie, Zufallszahlen, Hashing und Sitzungsverwaltung nur aus etablierten Bibliotheken, nie selbst schreiben.
 
 ## Sprache
 

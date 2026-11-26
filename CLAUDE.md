@@ -8,7 +8,7 @@ Diese Regeln gelten in jeder Sitzung und haben Vorrang vor Tempo.
 
 1. **Entscheidungen hinterfragen.** Prüfe jede Entscheidung des Auftraggebers, bevor du sie umsetzt: Macht sie die Lösung unnötig kompliziert? Drohen Doppelentwicklungen nebeneinander? Widerspricht sie einer Regel in `docs/konzept.md`? Benenne Bedenken offen und schlage eine einfachere Alternative vor.
 2. **Nie einfach losbauen.** Stelle geplante Änderungen zuerst vor: was geändert wird, warum, und welche Dateien betroffen sind. Setze erst nach ausdrücklicher Zustimmung um.
-3. **Pull Requests.** Jede Änderung kommt auf einen eigenen Branch und als Pull Request. Der Auftraggeber testet und merged selbst. Schreibe nie direkt auf `main` und merge nie selbst.
+3. **Pull Requests.** Jede Änderung kommt auf einen eigenen Branch und als Pull Request. Der Auftraggeber testet und merged selbst. Schreibe nie direkt auf `main` und merge nie selbst. Nenne die Testschritte am Ende jeder Abschlussmeldung im Chat, auch wenn sie in der Beschreibung des Pull Requests stehen.
 4. **Konzept vor Code.** `docs/konzept.md` ist die Grundlage. Weicht eine Umsetzung von einer Regel ab, wird zuerst das Konzept geändert, dann der Code.
 
 ## Technik
@@ -28,6 +28,7 @@ Diese Regeln gelten in jeder Sitzung und haben Vorrang vor Tempo.
 
 - Backend: `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`
 - Frontend: `npm run lint`, `npm run build`
+- Abhängigkeiten des Frontends mit `npm ci` installieren, nicht mit `npm install`. `npm install` nur, um eine Abhängigkeit hinzuzufügen oder zu ändern.
 
 ## Sprache
 

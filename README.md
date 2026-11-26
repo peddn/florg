@@ -39,9 +39,11 @@ Terminal 2, Frontend auf http://localhost:5173:
 
 ```sh
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
+
+`npm ci` installiert genau die Versionen aus `package-lock.json` und ändert die Datei nicht. Nach jedem `git pull` mit neuen Abhängigkeiten genügt ein erneutes `npm ci`.
 
 Öffne http://localhost:5173. Anfragen an `/api` leitet der Entwicklungsserver an das Backend weiter.
 
@@ -70,7 +72,7 @@ Im Betrieb liefert das Backend das gebaute Frontend selbst aus. Es läuft also n
 
 ```sh
 cd frontend
-npm install
+npm ci
 npm run build
 cd ../backend
 cargo run --release

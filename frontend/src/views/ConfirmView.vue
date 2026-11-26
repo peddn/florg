@@ -1,4 +1,5 @@
 <script setup>
+import BusyButton from '../components/BusyButton.vue'
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -42,14 +43,13 @@ async function confirm() {
 
       <template v-if="token && !error">
         <p class="mt-2 text-slate-700">Möchtest du dich auf diesem Gerät anmelden?</p>
-        <button
-          type="button"
-          class="mt-4 w-full rounded-lg bg-teal-700 px-4 py-3 font-medium text-white active:bg-teal-800 disabled:opacity-60"
-          :disabled="sending"
+        <BusyButton
+          class="mt-4 w-full rounded-lg bg-teal-700 px-4 py-3 font-medium text-white active:bg-teal-800"
           @click="confirm"
+          :busy="sending"
         >
-          {{ sending ? 'Wird angemeldet …' : 'Jetzt anmelden' }}
-        </button>
+          Jetzt anmelden
+        </BusyButton>
       </template>
 
       <template v-else>

@@ -19,6 +19,8 @@ Diese Regeln gelten in jeder Sitzung und haben Vorrang vor Tempo.
 - Frontend (`frontend/`): Vue 3 in JavaScript (kein TypeScript) mit Pinia, Vue Router und Tailwind CSS, gebaut mit Vite.
 - Bausteine mit Verhalten (Modal, Menü, Auswahl, Ziehen und Ablegen) kommen aus Reka UI und werden nicht selbst geschrieben. Seiten verwenden dafür die eigenen Komponenten in `frontend/src/components/` (z. B. `ModalDialog`, `ConfirmDialog`), nicht Reka UI direkt.
 - Formulare zum Anlegen und Ändern sowie Rückfragen vor dem Löschen öffnen sich als Modal. Keine Rückfragen über `window.confirm`.
+- Eine Änderung wird erst angezeigt, wenn der Server sie bestätigt hat, überall. Keine Werte vorab anzeigen und bei einem Fehler zurückstellen. Knöpfe, die eine Anfrage auslösen, sind `BusyButton` mit `busy`; gesperrt ist nur das auslösende Element.
+- Keine Pagination. Endpunkte liefern Listen, die durch ihren Zusammenhang begrenzt sind (ein Schuljahr, eine Lerngruppe, ein Block), nie alle Daten einer Tabelle über alle Jahre.
 - Desktop zuerst: Planung und Verwaltung nutzen die Breite großer Bildschirme. Die Erfassung im Unterricht muss am Handy gut bedienbar sein, alle Seiten bleiben am Handy benutzbar.
 - Oberfläche zuerst in Desktopbreite prüfen und zeigen, zusätzlich in Handybreite.
 - Kein Offline-Betrieb, eine Instanz pro Lehrer

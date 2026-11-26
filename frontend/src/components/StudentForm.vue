@@ -1,4 +1,5 @@
 <script setup>
+import BusyButton from './BusyButton.vue'
 import { reactive } from 'vue'
 
 import { FORMS_OF_ADDRESS } from '../format'
@@ -84,13 +85,13 @@ function submit() {
       >
         Abbrechen
       </button>
-      <button
+      <BusyButton
         type="submit"
-        class="rounded-lg bg-teal-700 px-4 py-2 font-medium text-white hover:bg-teal-800 disabled:opacity-60"
-        :disabled="busy"
+        class="rounded-lg bg-teal-700 px-4 py-2 font-medium text-white hover:bg-teal-800"
+        :busy="busy"
       >
         {{ student ? 'Speichern' : 'Anlegen' }}
-      </button>
+      </BusyButton>
     </div>
   </form>
 </template>

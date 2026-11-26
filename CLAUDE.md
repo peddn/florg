@@ -17,7 +17,7 @@ Diese Regeln gelten in jeder Sitzung und haben Vorrang vor Tempo.
 - Kein handgeschriebenes SQL außerhalb von Migrationen und Verbindungsaufbau; Abfragen laufen über SeaORM.
 - Frontend (`frontend/`): Vue 3 in JavaScript (kein TypeScript) mit Pinia, Vue Router und Tailwind CSS, gebaut mit Vite.
 - Mobile first, kein Offline-Betrieb, eine Instanz pro Lehrer
-- Sicherheit hat Vorrang vor Komfort und Tempo. Anmeldung nur per E-Mail-Link (`docs/konzept.md`, Regeln L1 bis L13). Kryptografie, Zufallszahlen, Hashing und Sitzungsverwaltung nur aus etablierten Bibliotheken, nie selbst schreiben.
+- Sicherheit hat Vorrang vor Komfort und Tempo. Anmeldung nur per E-Mail-Link (`docs/konzept.md`, Regeln L1 bis L13). Kryptografie, Zufallszahlen, Hashing, Cookies und Mailversand nur aus etablierten Bibliotheken, nie selbst schreiben (Regel L13).
 
 ## Prüfungen vor jedem Pull Request
 

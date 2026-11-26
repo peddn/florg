@@ -1,6 +1,6 @@
 # florg – Konzept und Regelwerk
 
-Stand: 23.11.2026
+Stand: 26.11.2026
 
 florg ("Fachlehrer Organizer") unterstützt bayerische Fachlehrer bei Jahresplanung, Wochenplanung, Unterrichtsnachweis, Schülerbeobachtung, kompetenzorientierten Zeugnisbemerkungen, Noten und Materialkosten. Dieses Dokument hält Konzept und Regeln fest. Code entsteht erst, wenn das Regelwerk steht.
 
@@ -225,13 +225,14 @@ Nicht im Startkatalog: 1.1 und alle weiteren entwicklungsbezogenen Abschnitte, 1
 - L4: In der Datenbank steht nur der Hash des Tokens.
 - L5: Der Link funktioniert nur in dem Browser, der ihn angefordert hat.
 - L6: Der Link meldet nicht direkt an, sondern führt auf eine Seite mit Bestätigungsknopf. So verbrauchen Mail-Scanner das Token nicht.
-- L7: Anforderungen von Links sind begrenzt, damit niemand das Postfach flutet.
+- L7: Anforderungen von Links sind begrenzt, damit niemand das Postfach flutet: höchstens 3 Anforderungen in 15 Minuten.
 - L8: Eine Sitzung gilt 30 Tage ab der letzten Nutzung. Das Sitzungs-Cookie ist `HttpOnly`, `Secure` und `SameSite`.
-- L9: "Überall abmelden" beendet sofort alle Sitzungen. Eine Liste einzelner Geräte gibt es nicht.
-- L10: Die Anwendung ist nur über HTTPS erreichbar.
+- L9: "Abmelden" ist der Standard und beendet nur die Sitzung des aktuellen Geräts. "Überall abmelden" ist die zweite, zurückhaltend dargestellte Option und beendet sofort alle Sitzungen. Eine Liste einzelner Geräte gibt es nicht.
+- L10: Die Anwendung ist nur über HTTPS erreichbar. Im Betrieb übernimmt das ein vorgeschalteter Reverse-Proxy; florg selbst lauscht nur lokal. Die öffentliche Adresse steht in der Konfiguration (`FLORG_PUBLIC_URL`). Anmeldelinks werden nur aus ihr gebildet, nie aus Angaben der Anfrage.
 - L11: Die SMTP-Zugangsdaten stehen in einer Konfigurationsdatei oder in Umgebungsvariablen auf dem Server, nie in der Datenbank und nicht in der Oberfläche. Die Verbindung zum Mailserver ist verschlüsselt.
-- L12: Drei Befehle auf dem Server gehören zum Betrieb: Konto beim ersten Start anlegen, Testmail verschicken, Anmeldelink als Notzugang ausgeben.
-- L13: Kryptografie, Zufallszahlen, Hashing und Sitzungsverwaltung kommen aus etablierten Bibliotheken und werden nicht selbst geschrieben.
+- L11a: Sind keine SMTP-Werte gesetzt, schreibt florg die Mail mit dem Anmeldelink ins Server-Protokoll, statt sie zu verschicken. Das dient der Entwicklung und als Notweg, wenn der Mailversand ausfällt. L5 gilt unverändert: Der Link aus dem Protokoll funktioniert nur in dem Browser, der ihn angefordert hat. florg warnt beim Start, und die Anmeldeseite weist darauf hin. Unvollständige SMTP-Werte sind ein Startfehler.
+- L12: Zwei Befehle auf dem Server gehören zum Betrieb: Konto anlegen oder dessen Adresse ändern, Testmail verschicken. Eine Adressänderung beendet alle Sitzungen und verwirft offene Anmeldelinks. Einen Befehl, der einen Anmeldelink ausgibt, gibt es nicht.
+- L13: Kryptografie, Zufallszahlen, Hashing, Cookies und Mailversand kommen aus etablierten Bibliotheken und werden nicht selbst geschrieben. Sitzungen liegen in der eigenen Tabelle `session`; selbst geschrieben sind dabei nur das Nachschlagen und die Ablaufprüfung.
 
 ### Datenschutz
 
@@ -272,6 +273,7 @@ Nicht im Startkatalog: 1.1 und alle weiteren entwicklungsbezogenen Abschnitte, 1
 5. Die 130 Satzbausteine für den Startkatalog müssen geschrieben werden.
 6. Welche Kompetenzen des Startkatalogs werden für die 7. Klasse tatsächlich ausgewählt?
 7. Datenmodell: steht in `docs/datenmodell.md`, im Detail bisher für Stufe 1.
+8. Die Grenze aus L7 gilt für die ganze Instanz, weil die Anmeldeseite kein Eingabefeld hat. Ein Fremder kann sie deshalb ausschöpfen und neue Anmeldungen blockieren; bestehende Sitzungen sind nicht betroffen. Ob eine zusätzliche Grenze je Absenderadresse nötig ist, ist offen.
 
 ## 14 Umsetzungsreihenfolge
 
@@ -296,7 +298,7 @@ Stufe 1 wäre als ein einziger Pull Request zu groß zum Testen. Sie wird deshal
 | Nr. | Inhalt | Was danach testbar ist | Stand |
 | --- | --- | --- | --- |
 | A | Grundgerüst: Projektstruktur, Backend und Frontend starten, Datenbank wird angelegt | Die Seite lädt und zeigt, dass das Backend antwortet | erledigt |
-| B | Anmeldung: Konto, E-Mail-Link, Sitzung, die drei Server-Befehle | Anmelden per Link, überall abmelden | offen |
+| B | Anmeldung: Konto, E-Mail-Link, Sitzung, die zwei Server-Befehle | Anmelden per Link, abmelden, überall abmelden | erledigt |
 | C | Schuljahr und unterrichtsfreie Zeiten, Feiertagsberechnung, Ferien-Datendatei | Schuljahr anlegen, Ferien und Feiertage sind vorgefüllt | offen |
 | D | Fächer, Klassen, Schüler, Lerngruppen | Stammdaten pflegen | offen |
 | E | Stundenplan mit A/B-Wochen, Blockerzeugung, Stundenbudget | Alle Blöcke des Jahres und das Budget je Gruppe | offen |

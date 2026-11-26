@@ -1,4 +1,5 @@
 <script setup>
+import BusyButton from '../components/BusyButton.vue'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -34,14 +35,13 @@ async function logoutAll() {
         „Überall abmelden“ beendet sofort alle Sitzungen, auch auf anderen Geräten und auf diesem.
         Danach meldest du dich mit einem neuen Anmeldelink wieder an.
       </p>
-      <button
-        type="button"
-        class="mt-4 rounded-lg border border-red-300 px-4 py-2 font-medium text-red-700 hover:bg-red-50 disabled:opacity-60"
-        :disabled="busy"
+      <BusyButton
+        class="mt-4 rounded-lg border border-red-300 px-4 py-2 font-medium text-red-700 hover:bg-red-50"
         @click="logoutAll"
+        :busy="busy"
       >
         Überall abmelden
-      </button>
+      </BusyButton>
       <p v-if="error" class="mt-3 text-sm text-red-700" role="alert">{{ error }}</p>
     </section>
   </main>

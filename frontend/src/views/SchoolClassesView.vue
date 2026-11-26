@@ -1,4 +1,5 @@
 <script setup>
+import BusyButton from '../components/BusyButton.vue'
 import { onMounted, reactive, ref } from 'vue'
 
 import ConfirmDialog from '../components/ConfirmDialog.vue'
@@ -133,7 +134,7 @@ function remove() {
             required
             maxlength="100"
             placeholder="z. B. 7a"
-            class="mt-1 w-40 rounded-lg border border-slate-300 px-3 py-2 text-base"
+            class="mt-1 block w-40 rounded-lg border border-slate-300 px-3 py-2 text-base"
           />
         </label>
         <p v-if="error" class="text-sm text-red-700" role="alert">{{ error }}</p>
@@ -145,13 +146,13 @@ function remove() {
           >
             Abbrechen
           </button>
-          <button
+          <BusyButton
             type="submit"
-            class="rounded-lg bg-teal-700 px-4 py-2 font-medium text-white hover:bg-teal-800 disabled:opacity-60"
-            :disabled="busy"
+            class="rounded-lg bg-teal-700 px-4 py-2 font-medium text-white hover:bg-teal-800"
+            :busy="busy"
           >
             {{ dialog?.schoolClass ? 'Speichern' : 'Anlegen' }}
-          </button>
+          </BusyButton>
         </div>
       </form>
     </ModalDialog>

@@ -1,4 +1,5 @@
 <script setup>
+import BusyButton from '../components/BusyButton.vue'
 import { ref } from 'vue'
 
 import { useAuthStore } from '../stores/auth'
@@ -56,13 +57,13 @@ function startOver() {
           spellcheck="false"
           class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-3 text-base focus:border-teal-700 focus:outline-2 focus:outline-teal-700"
         />
-        <button
+        <BusyButton
           type="submit"
-          class="mt-4 w-full rounded-lg bg-teal-700 px-4 py-3 font-medium text-white active:bg-teal-800 disabled:opacity-60"
-          :disabled="state === 'sending'"
+          class="mt-4 w-full rounded-lg bg-teal-700 px-4 py-3 font-medium text-white active:bg-teal-800"
+          :busy="state === 'sending'"
         >
-          {{ state === 'sending' ? 'Wird angefordert …' : 'Anmeldelink anfordern' }}
-        </button>
+          Anmeldelink anfordern
+        </BusyButton>
         <p v-if="error" class="mt-3 text-sm text-red-700" role="alert" data-testid="login-error">
           {{ error }}
         </p>

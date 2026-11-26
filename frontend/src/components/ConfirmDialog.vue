@@ -1,6 +1,7 @@
 <script setup>
 // Asks before something is deleted. Behaviour comes from Reka UI: unlike a
 // form window, it does not close on a click next to it.
+import BusyButton from './BusyButton.vue'
 import {
   AlertDialogCancel,
   AlertDialogContent,
@@ -40,14 +41,13 @@ const open = defineModel('open', { type: Boolean, required: true })
           >
             Abbrechen
           </AlertDialogCancel>
-          <button
-            type="button"
-            class="rounded-lg bg-red-700 px-4 py-2 font-medium text-white hover:bg-red-800 disabled:opacity-60"
-            :disabled="busy"
+          <BusyButton
+            class="rounded-lg bg-red-700 px-4 py-2 font-medium text-white hover:bg-red-800"
             @click="emit('confirm')"
+            :busy="busy"
           >
             {{ confirmLabel }}
-          </button>
+          </BusyButton>
         </div>
       </AlertDialogContent>
     </AlertDialogPortal>

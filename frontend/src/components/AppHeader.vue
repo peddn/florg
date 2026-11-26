@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useAuthStore } from '../stores/auth'
 import { useSchoolYearsStore } from '../stores/schoolYears'
+import BusyButton from './BusyButton.vue'
 
 const auth = useAuthStore()
 const schoolYears = useSchoolYearsStore()
@@ -74,11 +75,14 @@ function chooseYear(event) {
 }
 
 const error = ref(null)
+const loggingOut = ref(false)
 
 // Signs out this device only (rule L9).
 async function logout() {
   error.value = null
+  loggingOut.value = true
   const result = await auth.logout()
+  loggingOut.value = false
   if (auth.isSignedIn) {
     error.value = result.message
   } else {
@@ -114,13 +118,13 @@ async function logout() {
       <RouterLink :to="{ name: 'account' }" :class="[linkClass, stateClass('account')]">
         Konto
       </RouterLink>
-      <button
-        type="button"
-        class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+      <BusyButton
+        class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium whitespace-nowrap text-slate-700 hover:bg-slate-100"
+        :busy="loggingOut"
         @click="logout"
       >
         Abmelden
-      </button>
+      </BusyButton>
     </nav>
     <p v-if="error" class="mx-auto max-w-6xl px-4 pb-2 text-right text-sm text-red-700" role="alert">
       {{ error }}

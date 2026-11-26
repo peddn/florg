@@ -1,4 +1,5 @@
 <script setup>
+import BusyButton from './BusyButton.vue'
 import { ref } from 'vue'
 
 import { addressLabel } from '../format'
@@ -102,14 +103,14 @@ function back() {
       >
         Abbrechen
       </button>
-      <button
-        type="button"
-        class="rounded-lg bg-teal-700 px-4 py-2 font-medium text-white hover:bg-teal-800 disabled:opacity-60"
-        :disabled="busy || !text.trim()"
+      <BusyButton
+        class="rounded-lg bg-teal-700 px-4 py-2 font-medium text-white hover:bg-teal-800"
         @click="send(true)"
+        :busy="busy"
+        :disabled="!text.trim()"
       >
         Vorschau
-      </button>
+      </BusyButton>
     </div>
   </div>
 
@@ -174,14 +175,14 @@ function back() {
       >
         Zurück
       </button>
-      <button
-        type="button"
-        class="rounded-lg bg-teal-700 px-4 py-2 font-medium text-white hover:bg-teal-800 disabled:opacity-60"
-        :disabled="busy || preview.error_count > 0 || preview.new_count === 0"
+      <BusyButton
+        class="rounded-lg bg-teal-700 px-4 py-2 font-medium text-white hover:bg-teal-800"
         @click="send(false)"
+        :busy="busy"
+        :disabled="preview.error_count > 0 || preview.new_count === 0"
       >
         {{ preview.new_count }} Schüler anlegen
-      </button>
+      </BusyButton>
     </div>
   </div>
 </template>

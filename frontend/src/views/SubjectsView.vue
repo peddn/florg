@@ -1,4 +1,5 @@
 <script setup>
+import BusyButton from '../components/BusyButton.vue'
 import { onMounted, reactive, ref } from 'vue'
 
 import ConfirmDialog from '../components/ConfirmDialog.vue'
@@ -138,7 +139,7 @@ function remove() {
             required
             maxlength="10"
             placeholder="z. B. Te"
-            class="mt-1 w-40 rounded-lg border border-slate-300 px-3 py-2 text-base"
+            class="mt-1 block w-40 rounded-lg border border-slate-300 px-3 py-2 text-base"
           />
           <span class="mt-1 block text-xs font-normal text-slate-500">
             Höchstens 10 Zeichen, für enge Darstellungen wie den Stundenplan.
@@ -153,13 +154,13 @@ function remove() {
           >
             Abbrechen
           </button>
-          <button
+          <BusyButton
             type="submit"
-            class="rounded-lg bg-teal-700 px-4 py-2 font-medium text-white hover:bg-teal-800 disabled:opacity-60"
-            :disabled="busy"
+            class="rounded-lg bg-teal-700 px-4 py-2 font-medium text-white hover:bg-teal-800"
+            :busy="busy"
           >
             {{ dialog?.subject ? 'Speichern' : 'Anlegen' }}
-          </button>
+          </BusyButton>
         </div>
       </form>
     </ModalDialog>

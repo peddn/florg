@@ -17,6 +17,8 @@ Diese Regeln gelten in jeder Sitzung und haben Vorrang vor Tempo.
 - Kein handgeschriebenes SQL außerhalb von Migrationen und Verbindungsaufbau; Abfragen laufen über SeaORM.
 - Neue API-Endpunkte brauchen eine Sitzung: Sie kommen in `backend/src/routes.rs` zu den geschützten Routen (`protected`). Offen bleiben nur `/api/health` und die Anmeldung selbst.
 - Frontend (`frontend/`): Vue 3 in JavaScript (kein TypeScript) mit Pinia, Vue Router und Tailwind CSS, gebaut mit Vite.
+- Bausteine mit Verhalten (Modal, Menü, Auswahl, Ziehen und Ablegen) kommen aus Reka UI und werden nicht selbst geschrieben. Seiten verwenden dafür die eigenen Komponenten in `frontend/src/components/` (z. B. `ModalDialog`, `ConfirmDialog`), nicht Reka UI direkt.
+- Formulare zum Anlegen und Ändern sowie Rückfragen vor dem Löschen öffnen sich als Modal. Keine Rückfragen über `window.confirm`.
 - Desktop zuerst: Planung und Verwaltung nutzen die Breite großer Bildschirme. Die Erfassung im Unterricht muss am Handy gut bedienbar sein, alle Seiten bleiben am Handy benutzbar.
 - Oberfläche zuerst in Desktopbreite prüfen und zeigen, zusätzlich in Handybreite.
 - Kein Offline-Betrieb, eine Instanz pro Lehrer

@@ -19,7 +19,7 @@ Der Hauptnutzen ist Zeitersparnis: Der Unterrichtsnachweis entsteht aus der Plan
 | Geräte | Hauptnutzung am Desktop. Die Erfassung im Unterricht (Anwesenheit, Beobachtung) muss am Handy gut bedienbar sein |
 | Offline | Nicht nötig |
 | Backend | Rust mit axum; SQLite über SeaORM als Zwischenschicht, ein späterer Wechsel zu PostgreSQL bleibt möglich |
-| Frontend | Vue.js in JavaScript (kein TypeScript) mit Pinia und Router, Tailwind CSS, gebaut mit Vite |
+| Frontend | Vue.js in JavaScript (kein TypeScript) mit Pinia und Router, Tailwind CSS, gebaut mit Vite. Bausteine mit Verhalten (Modal, Menü, Auswahl) kommen aus Reka UI, das Aussehen aus Tailwind |
 | Auslieferung | Das Backend liefert das gebaute Frontend aus; im Betrieb läuft ein Programm |
 | Prüfung | GitHub Actions bauen, testen und linten jeden Pull Request |
 | Mengengerüst | 8 bis 10 Gruppen, je bis 16 Schüler (mehr möglich), etwa 130 bis 160 Schüler je Instanz |
@@ -248,6 +248,7 @@ Nicht im Startkatalog: 1.1 und alle weiteren entwicklungsbezogenen Abschnitte, 1
 ### Bedienung
 
 - Planung, Verwaltung und Zeugnisphase sind für den Desktop ausgelegt und nutzen dessen Breite, etwa mit Tabellen. Die Erfassung im Unterricht ist für das Handy ausgelegt. Alle Seiten bleiben am Handy benutzbar.
+- Formulare zum Anlegen und Ändern sowie Rückfragen vor dem Löschen öffnen sich als Modal über der Seite.
 - Eine Kopfzeile trägt links die Navigation und rechts "Konto" und "Abmelden". Eine Statusleiste am unteren Bildschirmrand zeigt rechts, ob das Backend erreichbar ist.
 - Ausgaben sind als Text kopierbar und als PDF druckbar.
 

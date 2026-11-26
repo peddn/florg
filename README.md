@@ -2,7 +2,7 @@
 
 florg ("Fachlehrer Organizer") unterstützt bayerische Fachlehrer bei Jahresplanung, Wochenplanung, Unterrichtsnachweis, Schülerbeobachtung, Zeugnisbemerkungen, Noten und Materialkosten.
 
-Das Projekt ist im Aufbau. Bisher gibt es das Grundgerüst, die Anmeldung, Schuljahre mit Ferien und Feiertagen sowie die Listen der Fächer und Klassen.
+Das Projekt ist im Aufbau. Bisher gibt es das Grundgerüst, die Anmeldung, Schuljahre mit Ferien und Feiertagen, die Listen der Fächer und Klassen sowie die Schüler je Schuljahr mit CSV-Import.
 
 - Konzept und Regeln: [`docs/konzept.md`](docs/konzept.md)
 - Datenmodell: [`docs/datenmodell.md`](docs/datenmodell.md)
@@ -108,6 +108,25 @@ Beim Anlegen eines Schuljahres trägt florg Ferien und Feiertage ein.
 - Ferien stehen in [`backend/data/school_holidays_bavaria.json`](backend/data/school_holidays_bavaria.json). Die Datei stammt aus der amtlichen Kalenderdatei des bayerischen Kultusministeriums und nennt Quelle und Abrufdatum. Sie reicht bis zum Schuljahr 2029/30 und wird in das Programm eingebaut.
 
 Erscheint eine neue Ferienordnung, werden die neuen Schuljahre in dieser Datei ergänzt.
+
+## Schüler als CSV importieren
+
+Auf der Seite "Schüler" eines Schuljahres liest "CSV importieren" eine Liste ein, aus einer Datei oder als eingefügter Text.
+
+```csv
+Vorname;Nachname;Klasse;Anrede
+Anna;Huber;7a;sie
+Ben;Maier;7b;er
+Kim;Lang;7b;
+```
+
+- Die erste Zeile nennt die Spalten. Pflicht ist nur `Vorname`. Die Reihenfolge ist frei, unbekannte Spalten werden übergangen.
+- `Anrede` kennt "er", "sie" und leer (nur Vorname). Statt `Anrede` geht auch `Geschlecht` mit "m", "w" und "d". Gespeichert wird nur die Anrede.
+- Trennzeichen ist Semikolon, Komma oder Tabulator. Dateien aus Excel funktionieren ebenso wie kopierte Zellen.
+- Klassen, die es noch nicht gibt, werden angelegt.
+- Vor dem Anlegen zeigt florg eine Vorschau. Schon vorhandene Schüler werden übersprungen. Solange eine Zeile fehlerhaft ist, wird nichts angelegt.
+
+Die genauen Regeln stehen in [`docs/datenmodell.md`](docs/datenmodell.md), D-I1 bis D-I8.
 
 ## Prüfungen
 

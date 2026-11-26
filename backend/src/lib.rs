@@ -15,6 +15,8 @@ pub mod migration;
 pub mod routes;
 pub mod school_class;
 pub mod school_year;
+pub mod student;
+pub mod student_import;
 pub mod subject;
 pub mod validate;
 

@@ -18,6 +18,7 @@ use crate::{
     AppState, calendar,
     db::now,
     entity::{
+        enrollment,
         school_free_period::{self, Kind},
         school_year,
     },
@@ -323,13 +324,23 @@ async fn update(
     Ok(Json(detail))
 }
 
-/// Deletes a school year together with its free periods.
+/// Deletes a school year together with its free periods, unless students
+/// are still enrolled in it.
 async fn remove(
     State(state): State<AppState>,
     Path(id): Path<i32>,
 ) -> Result<StatusCode, ApiError> {
     let transaction = state.db.begin().await?;
     find_year(&transaction, id).await?;
+    let students = enrollment::Entity::find()
+        .filter(enrollment::Column::SchoolYearId.eq(id))
+        .count(&transaction)
+        .await?;
+    if students > 0 {
+        return Err(ApiError::conflict(
+            "Das Schuljahr hat noch Schüler. Entferne sie zuerst.",
+        ));
+    }
     delete_periods_of(&transaction, id).await?;
     school_year::Entity::delete_by_id(id)
         .exec(&transaction)

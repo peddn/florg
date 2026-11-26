@@ -50,7 +50,7 @@ async function create(input) {
 </script>
 
 <template>
-  <main class="mx-auto max-w-3xl p-4">
+  <main class="mx-auto max-w-6xl p-4">
     <div class="flex items-center justify-between gap-3">
       <h1 class="text-2xl font-semibold">Schuljahre</h1>
       <button
@@ -65,7 +65,7 @@ async function create(input) {
 
     <section
       v-if="creating"
-      class="mt-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+      class="mt-4 max-w-2xl rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
     >
       <h2 class="text-lg font-medium">Neues Schuljahr</h2>
       <p class="mt-1 text-sm text-slate-600">
@@ -102,11 +102,11 @@ async function create(input) {
     <p v-else-if="store.list.length === 0 && !creating" class="mt-4 text-slate-600">
       Es gibt noch kein Schuljahr.
     </p>
-    <ul v-else class="mt-4 grid gap-2">
+    <ul v-else class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       <li v-for="year in store.list" :key="year.id">
         <RouterLink
           :to="{ name: 'schoolYear', params: { id: year.id } }"
-          class="block rounded-xl border border-slate-200 bg-white p-4 shadow-sm active:bg-slate-50"
+          class="block rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-teal-600 active:bg-slate-50"
         >
           <span class="text-lg font-medium text-teal-800">{{ year.name }}</span>
           <span class="mt-1 block text-sm text-slate-600">

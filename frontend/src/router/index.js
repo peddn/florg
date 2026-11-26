@@ -1,8 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 import { useAuthStore } from '../stores/auth'
+import AccountView from '../views/AccountView.vue'
 import ConfirmView from '../views/ConfirmView.vue'
-import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
 import SchoolYearsView from '../views/SchoolYearsView.vue'
 import SchoolYearView from '../views/SchoolYearView.vue'
@@ -10,9 +10,11 @@ import SchoolYearView from '../views/SchoolYearView.vue'
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/', name: 'home', component: HomeView },
+    // There is no start page yet. Until there is one, the school years open.
+    { path: '/', name: 'home', redirect: { name: 'schoolYears' } },
     { path: '/schuljahre', name: 'schoolYears', component: SchoolYearsView },
     { path: '/schuljahre/:id(\\d+)', name: 'schoolYear', component: SchoolYearView },
+    { path: '/konto', name: 'account', component: AccountView },
     { path: '/anmelden', name: 'login', component: LoginView, meta: { public: true } },
     // The path is part of every login link. Keep it in step with the backend.
     {

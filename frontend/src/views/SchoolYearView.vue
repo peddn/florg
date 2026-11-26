@@ -26,6 +26,9 @@ const kindStyles = {
 
 const newPeriod = { name: '', kind: 'other', start_date: '', end_date: '' }
 
+// Columns of the table of free periods on wide screens.
+const columns = 'md:grid-cols-[minmax(0,1fr)_7rem_minmax(0,24rem)_10rem]'
+
 watch(
   () => route.params.id,
   async (id) => {
@@ -86,7 +89,7 @@ function removePeriod(period) {
 </script>
 
 <template>
-  <main class="mx-auto max-w-3xl p-4">
+  <main class="mx-auto max-w-6xl p-4">
     <RouterLink :to="{ name: 'schoolYears' }" class="text-sm text-teal-800 underline">
       Alle Schuljahre
     </RouterLink>
@@ -150,7 +153,7 @@ function removePeriod(period) {
 
       <section
         v-if="editing === 'new'"
-        class="mt-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+        class="mt-3 max-w-2xl rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
       >
         <h3 class="text-lg font-medium">Neue unterrichtsfreie Zeit</h3>
         <FreePeriodForm
@@ -169,55 +172,66 @@ function removePeriod(period) {
       <p v-if="year.free_periods.length === 0" class="mt-3 text-slate-600">
         Es sind keine unterrichtsfreien Zeiten eingetragen.
       </p>
-      <ul v-else class="mt-3 divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white shadow-sm">
-        <li v-for="period in year.free_periods" :key="period.id" class="p-4">
-          <FreePeriodForm
-            v-if="editing === period.id"
-            :initial="period"
-            :min="year.start_date"
-            :max="year.end_date"
-            submit-label="Speichern"
-            :busy="busy"
-            :error="error"
-            @submit="(input) => savePeriod(period, input)"
-            @cancel="edit(null)"
-          />
-          <div v-else class="flex items-start justify-between gap-3">
-            <div>
-              <p class="font-medium">
-                {{ period.name }}
+      <!-- A table on wide screens, stacked entries on a phone. -->
+      <div v-else class="mt-3 rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div
+          class="hidden border-b border-slate-200 px-4 py-2 text-sm font-medium text-slate-500 md:grid md:gap-4"
+          :class="columns"
+          aria-hidden="true"
+        >
+          <span>Name</span>
+          <span>Art</span>
+          <span>Zeitraum</span>
+          <span />
+        </div>
+        <ul class="divide-y divide-slate-200">
+          <li v-for="period in year.free_periods" :key="period.id" class="px-4 py-3">
+            <FreePeriodForm
+              v-if="editing === period.id"
+              :initial="period"
+              :min="year.start_date"
+              :max="year.end_date"
+              submit-label="Speichern"
+              :busy="busy"
+              :error="error"
+              @submit="(input) => savePeriod(period, input)"
+              @cancel="edit(null)"
+            />
+            <div v-else class="grid gap-1 md:items-center md:gap-4" :class="columns">
+              <span class="font-medium">{{ period.name }}</span>
+              <span>
                 <span
-                  class="ml-1 rounded-full px-2 py-0.5 text-xs font-medium"
+                  class="rounded-full px-2 py-0.5 text-xs font-medium"
                   :class="kindStyles[period.kind]"
                 >
                   {{ kindLabel(period.kind) }}
                 </span>
-              </p>
-              <p class="mt-1 text-sm text-slate-600">
+              </span>
+              <span class="text-sm text-slate-600 md:text-base md:text-slate-900">
                 {{ formatRange(period.start_date, period.end_date) }}
-              </p>
+              </span>
+              <span class="flex gap-1 md:justify-end">
+                <button
+                  type="button"
+                  class="rounded-lg px-2 py-1 text-sm font-medium text-teal-800 hover:bg-teal-50"
+                  :aria-label="`${period.name} ändern`"
+                  @click="edit(period.id)"
+                >
+                  Ändern
+                </button>
+                <button
+                  type="button"
+                  class="rounded-lg px-2 py-1 text-sm font-medium text-red-700 hover:bg-red-50"
+                  :aria-label="`${period.name} löschen`"
+                  @click="removePeriod(period)"
+                >
+                  Löschen
+                </button>
+              </span>
             </div>
-            <div class="flex shrink-0 gap-1">
-              <button
-                type="button"
-                class="rounded-lg px-2 py-1 text-sm font-medium text-teal-800"
-                :aria-label="`${period.name} ändern`"
-                @click="edit(period.id)"
-              >
-                Ändern
-              </button>
-              <button
-                type="button"
-                class="rounded-lg px-2 py-1 text-sm font-medium text-red-700"
-                :aria-label="`${period.name} löschen`"
-                @click="removePeriod(period)"
-              >
-                Löschen
-              </button>
-            </div>
-          </div>
-        </li>
-      </ul>
+          </li>
+        </ul>
+      </div>
     </template>
   </main>
 </template>

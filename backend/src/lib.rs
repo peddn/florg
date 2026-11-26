@@ -8,6 +8,7 @@ pub mod calendar;
 pub mod cli;
 pub mod config;
 pub mod db;
+pub mod demo_data;
 pub mod entity;
 pub mod error;
 pub mod mail;

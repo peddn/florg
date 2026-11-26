@@ -24,6 +24,12 @@ Diese Regeln gelten in jeder Sitzung und haben Vorrang vor Tempo.
 - Kein Offline-Betrieb, eine Instanz pro Lehrer
 - Sicherheit hat Vorrang vor Komfort und Tempo. Anmeldung nur per E-Mail-Link (`docs/konzept.md`, Regeln L1 bis L13). Kryptografie, Zufallszahlen, Hashing, Cookies und Mailversand nur aus etablierten Bibliotheken, nie selbst schreiben (Regel L13).
 
+## Beispieldaten
+
+- `florg demo-data` füllt eine leere Datenbank mit Beispieldaten, `florg demo-data --reset` ersetzt vorhandene Fachdaten (`docs/konzept.md`, E1 bis E4). In der Entwicklung: `cargo run -- demo-data --reset`.
+- Jeder Pull Request, der neue Fachdaten einführt, erweitert `backend/src/demo_data.rs` um passende Beispieldaten und das Löschen bei `--reset`.
+- Testschritte gehen vom Stand nach `demo-data --reset` aus und nennen konkrete Einträge daraus.
+
 ## Prüfungen vor jedem Pull Request
 
 - Backend: `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`

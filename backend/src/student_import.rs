@@ -8,15 +8,14 @@ use axum::{
     extract::{Path, State},
 };
 use csv::{ReaderBuilder, StringRecord, Trim};
-use sea_orm::{ActiveModelTrait, ConnectionTrait, Set, TransactionTrait};
+use sea_orm::{ConnectionTrait, TransactionTrait};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     AppState,
-    db::now,
     entity::{school_class, student::FormOfAddress},
     error::ApiError,
-    school_class::load_all as load_classes,
+    school_class::{insert as insert_class, load_all as load_classes},
     student::{
         StudentRow, clean_first_name, clean_last_name, ensure_year_exists, insert_student,
         load_rows,
@@ -348,20 +347,12 @@ async fn apply(
     preview: &ImportPreview,
     classes: &[school_class::Model],
 ) -> Result<(), ApiError> {
-    let now = now();
     let mut class_ids: HashMap<String, i32> = classes
         .iter()
         .map(|class| (class.name.to_lowercase(), class.id))
         .collect();
     for name in &preview.new_classes {
-        let class = school_class::ActiveModel {
-            name: Set(name.clone()),
-            created_at: Set(now),
-            updated_at: Set(now),
-            ..Default::default()
-        }
-        .insert(db)
-        .await?;
+        let class = insert_class(db, name).await?;
         class_ids.insert(name.to_lowercase(), class.id);
     }
 

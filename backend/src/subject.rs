@@ -6,7 +6,9 @@ use axum::{
     http::StatusCode,
     routing::{get, put},
 };
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, IntoActiveModel, Set};
+use sea_orm::{
+    ActiveModelTrait, ConnectionTrait, DatabaseConnection, EntityTrait, IntoActiveModel, Set,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -67,7 +69,7 @@ impl SubjectInput {
 }
 
 /// All subjects, sorted by name without regard to case.
-async fn load_all(db: &DatabaseConnection) -> Result<Vec<subject::Model>, ApiError> {
+async fn load_all(db: &impl ConnectionTrait) -> Result<Vec<subject::Model>, ApiError> {
     let mut subjects = subject::Entity::find().all(db).await?;
     subjects.sort_by_key(|subject| subject.name.to_lowercase());
     Ok(subjects)
@@ -75,7 +77,7 @@ async fn load_all(db: &DatabaseConnection) -> Result<Vec<subject::Model>, ApiErr
 
 /// Rejects a name or short name that another subject already uses.
 async fn ensure_unique(
-    db: &DatabaseConnection,
+    db: &impl ConnectionTrait,
     input: &SubjectInput,
     except_id: Option<i32>,
 ) -> Result<(), ApiError> {
@@ -109,23 +111,36 @@ async fn list(State(state): State<AppState>) -> Result<Json<Vec<Subject>>, ApiEr
     Ok(Json(subjects.into_iter().map(Into::into).collect()))
 }
 
-async fn create(
-    State(state): State<AppState>,
-    Json(input): Json<SubjectInput>,
-) -> Result<(StatusCode, Json<Subject>), ApiError> {
-    let input = input.validated()?;
-    ensure_unique(&state.db, &input, None).await?;
+/// Creates a subject after checking the rules of the data model.
+pub async fn insert(
+    db: &impl ConnectionTrait,
+    name: &str,
+    short_name: &str,
+) -> Result<subject::Model, ApiError> {
+    let input = SubjectInput {
+        name: name.to_owned(),
+        short_name: short_name.to_owned(),
+    }
+    .validated()?;
+    ensure_unique(db, &input, None).await?;
     let now = now();
 
-    let subject = subject::ActiveModel {
+    Ok(subject::ActiveModel {
         name: Set(input.name),
         short_name: Set(input.short_name),
         created_at: Set(now),
         updated_at: Set(now),
         ..Default::default()
     }
-    .insert(&state.db)
-    .await?;
+    .insert(db)
+    .await?)
+}
+
+async fn create(
+    State(state): State<AppState>,
+    Json(input): Json<SubjectInput>,
+) -> Result<(StatusCode, Json<Subject>), ApiError> {
+    let subject = insert(&state.db, &input.name, &input.short_name).await?;
     Ok((StatusCode::CREATED, Json(subject.into())))
 }
 

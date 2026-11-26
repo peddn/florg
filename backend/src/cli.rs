@@ -7,7 +7,7 @@ use sea_orm::{ActiveModelTrait, DatabaseConnection, IntoActiveModel, Set};
 use crate::{
     auth,
     config::Config,
-    db,
+    db, demo_data,
     entity::account,
     mail::{self, Delivery, Mailer},
 };
@@ -29,6 +29,8 @@ pub enum Command {
     /// Prüft den Mailversand.
     #[command(subcommand)]
     Mail(MailCommand),
+    /// Füllt eine leere Datenbank mit Beispieldaten. Für Entwicklung und Test.
+    DemoData(DemoData),
 }
 
 #[derive(Subcommand)]
@@ -45,6 +47,14 @@ pub struct AccountSet {
     /// Name für Ausgaben.
     #[arg(long)]
     pub name: Option<String>,
+}
+
+#[derive(Args)]
+pub struct DemoData {
+    /// Löscht vorher alle Fachdaten. Konto und Sitzungen bleiben erhalten.
+    /// Gesperrt, solange der Mailversand eingerichtet ist.
+    #[arg(long)]
+    pub reset: bool,
 }
 
 #[derive(Subcommand)]
@@ -119,5 +129,20 @@ pub async fn mail_test(db: &DatabaseConnection, config: &Config) -> Result<()> {
         .await
         .context("Die Testmail konnte nicht verschickt werden")?;
     println!("Testmail an {} verschickt.", account.email);
+    Ok(())
+}
+
+/// Fills the database with example data (concept, E1 to E4).
+pub async fn demo_data(db: &DatabaseConnection, config: &Config, args: DemoData) -> Result<()> {
+    let today = chrono::Local::now().date_naive();
+    let summary = demo_data::run(db, config.smtp.is_some(), args.reset, today).await?;
+
+    if let Some(deleted) = summary.deleted {
+        println!("Gelöscht: {deleted}.");
+    }
+    println!(
+        "Beispieldaten für das Schuljahr {} angelegt: {}.",
+        summary.school_year, summary.created
+    );
     Ok(())
 }

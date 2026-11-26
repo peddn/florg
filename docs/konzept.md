@@ -238,6 +238,13 @@ Nicht im Startkatalog: 1.1 und alle weiteren entwicklungsbezogenen Abschnitte, 1
 - L12: Zwei Befehle auf dem Server gehören zum Betrieb: Konto anlegen oder dessen Adresse ändern, Testmail verschicken. Eine Adressänderung beendet alle Sitzungen und verwirft offene Anmeldelinks. Einen Befehl, der einen Anmeldelink ausgibt, gibt es nicht.
 - L13: Kryptografie, Zufallszahlen, Hashing, Cookies und Mailversand kommen aus etablierten Bibliotheken und werden nicht selbst geschrieben. Sitzungen liegen in der eigenen Tabelle `session`; selbst geschrieben sind dabei nur das Nachschlagen und die Ablaufprüfung.
 
+### Entwicklung und Test
+
+- E1: Der Befehl `florg demo-data` füllt eine leere Datenbank mit plausiblen Beispieldaten für das Schuljahr nach dem laufenden. Von selbst legt florg nie Beispieldaten an.
+- E2: Die Beispieldaten sind bei jedem Lauf dieselben und entstehen über dieselben Regeln wie Eingaben in der Oberfläche. Mit jedem neuen Teil der Anwendung kommen dessen Daten dazu.
+- E3: Enthält die Datenbank schon Fachdaten, bricht der Befehl ab. Mit dem Zusatz `--reset` löscht er vorher alle Fachdaten. Konto, Sitzungen und offene Anmeldelinks bleiben erhalten.
+- E4: `--reset` verweigert den Dienst, wenn der Mailversand eingerichtet ist. So trifft er keine Instanz im Betrieb.
+
 ### Datenschutz
 
 - Die Daten liegen auf einem vom Lehrer privat gemieteten Server. Ob das für Schülerdaten zulässig ist, klärt jeder Nutzer mit Schulleitung oder Datenschutzbeauftragtem. Dieses Dokument trifft dazu keine rechtliche Aussage.

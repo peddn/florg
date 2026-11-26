@@ -44,6 +44,7 @@ async fn run(cli: Cli) -> Result<()> {
         Command::Serve => serve(config, db).await,
         Command::Account(AccountCommand::Set(args)) => cli::account_set(&db, args).await,
         Command::Mail(MailCommand::Test) => cli::mail_test(&db, &config).await,
+        Command::DemoData(args) => cli::demo_data(&db, &config, args).await,
     }
 }
 

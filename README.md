@@ -2,7 +2,7 @@
 
 florg ("Fachlehrer Organizer") unterstützt bayerische Fachlehrer bei Jahresplanung, Wochenplanung, Unterrichtsnachweis, Schülerbeobachtung, Zeugnisbemerkungen, Noten und Materialkosten.
 
-Das Projekt ist im Aufbau. Bisher gibt es nur das Grundgerüst ohne Fachfunktionen.
+Das Projekt ist im Aufbau. Bisher gibt es das Grundgerüst und die Anmeldung, noch ohne Fachfunktionen.
 
 - Konzept und Regeln: [`docs/konzept.md`](docs/konzept.md)
 - Datenmodell: [`docs/datenmodell.md`](docs/datenmodell.md)
@@ -43,7 +43,26 @@ npm install
 npm run dev
 ```
 
-Öffne http://localhost:5173. Die Seite zeigt, ob das Backend erreichbar ist. Anfragen an `/api` leitet der Entwicklungsserver an das Backend weiter.
+Öffne http://localhost:5173. Anfragen an `/api` leitet der Entwicklungsserver an das Backend weiter.
+
+### Konto anlegen und anmelden
+
+Jede Instanz hat genau ein Konto. Lege es einmal an:
+
+```sh
+cd backend
+cargo run -- account set --email du@example.org
+```
+
+Ohne eingerichteten Mailversand verschickt florg keine Mail. Der Anmeldelink steht dann im Terminal des Backends:
+
+1. Gib auf der Anmeldeseite die Adresse des Kontos ein und tippe auf "Anmeldelink anfordern".
+2. Kopiere den Link aus dem Terminal des Backends in denselben Browser.
+3. Bestätige mit "Jetzt anmelden".
+
+Der Link gilt 15 Minuten, nur einmal und nur in dem Browser, der ihn angefordert hat.
+
+Die Anmeldeseite antwortet immer gleich, auch bei falscher Adresse. Kommt kein Link, steht der Grund im Terminal des Backends.
 
 ## Wie im Betrieb starten
 
@@ -57,11 +76,27 @@ cd ../backend
 cargo run --release
 ```
 
-Öffne http://127.0.0.1:3000.
+Öffne http://127.0.0.1:3000. Damit die Anmeldelinks auf diese Adresse zeigen, setze vorher in `backend/.env` den Wert `FLORG_PUBLIC_URL=http://127.0.0.1:3000`.
+
+Auf einem Server gehört ein Reverse-Proxy mit HTTPS vor florg. `FLORG_PUBLIC_URL` ist dann die HTTPS-Adresse.
+
+## Befehle
+
+Das Backend kennt neben dem Serverstart zwei Befehle. In der Entwicklung stehen sie hinter `cargo run --`.
+
+| Befehl | Wirkung |
+| --- | --- |
+| `florg` | Startet den Server |
+| `florg account set --email <Adresse>` | Legt das Konto an oder ändert dessen Adresse. Eine Änderung beendet alle Sitzungen |
+| `florg mail test` | Verschickt eine Testmail an die Adresse des Kontos |
 
 ## Konfiguration
 
 Das Backend liest Umgebungsvariablen, wahlweise aus `backend/.env`. Die Vorlage mit allen Werten ist [`backend/.env.example`](backend/.env.example).
+
+Für den Mailversand setzt du die SMTP-Werte aus der Vorlage und prüfst sie mit `florg mail test`. Fehlen sie, schreibt florg den Anmeldelink ins Server-Protokoll. Unter systemd liest du es mit `journalctl`. Unvollständige SMTP-Werte verhindern den Start.
+
+Das Protokoll zeigt Meldungen ab der Stufe `info`. Mit der Umgebungsvariable `RUST_LOG` lässt sich das ändern, zum Beispiel `RUST_LOG=debug`.
 
 ## Prüfungen
 

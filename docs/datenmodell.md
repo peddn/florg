@@ -1,6 +1,6 @@
 # florg – Datenmodell
 
-Stand: 23.11.2026
+Stand: 26.11.2026
 
 Dieses Dokument leitet das Datenmodell aus `docs/konzept.md` ab. Teil 1 zeigt alle Objekte grob über alle sieben Stufen. Teil 2 legt Tabellen und Felder nur für Stufe 1 fest. Die Details der späteren Stufen entstehen jeweils vor deren Umsetzung.
 
@@ -128,7 +128,7 @@ Eine angemeldete Sitzung auf einem Gerät.
 | `last_used_at` | Zeitpunkt | ja | Letzte Nutzung |
 | `expires_at` | Zeitpunkt | ja | Ablauf, 30 Tage nach der letzten Nutzung |
 
-"Überall abmelden" löscht alle Sitzungen des Kontos.
+"Abmelden" löscht die Sitzung des aktuellen Geräts, "Überall abmelden" alle Sitzungen des Kontos (Regel L9).
 
 ### school_year
 

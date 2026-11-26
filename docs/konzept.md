@@ -18,8 +18,10 @@ Der Hauptnutzen ist Zeitersparnis: Der Unterrichtsnachweis entsteht aus der Plan
 | Sicherheit | Hat Vorrang vor Komfort und Tempo |
 | Geräte | Mobile first; Zeugnisphase für Laptop oder Tablet ausgelegt |
 | Offline | Nicht nötig |
-| Backend | Rust mit SQLite über eine Zwischenschicht; ein späterer Wechsel zu PostgreSQL bleibt möglich |
-| Frontend | Vue.js mit Pinia und Router, Tailwind CSS |
+| Backend | Rust mit axum; SQLite über SeaORM als Zwischenschicht, ein späterer Wechsel zu PostgreSQL bleibt möglich |
+| Frontend | Vue.js in JavaScript (kein TypeScript) mit Pinia und Router, Tailwind CSS, gebaut mit Vite |
+| Auslieferung | Das Backend liefert das gebaute Frontend aus; im Betrieb läuft ein Programm |
+| Prüfung | GitHub Actions bauen, testen und linten jeden Pull Request |
 | Mengengerüst | 8 bis 10 Gruppen, je bis 16 Schüler (mehr möglich), etwa 130 bis 160 Schüler je Instanz |
 | Ausgaben | Zeugnisbemerkungen, Noten, Leistungsübersichten, Kostenkalkulationen |
 

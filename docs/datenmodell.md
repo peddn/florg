@@ -8,7 +8,7 @@ Bezeichner folgen dem Glossar in `docs/konzept.md`, Abschnitt 2.
 
 ## Grundsätze
 
-- D1: Die Datenbank ist SQLite. Der Zugriff läuft über eine Zwischenschicht, damit ein späterer Wechsel zu PostgreSQL möglich bleibt.
+- D1: Die Datenbank ist SQLite. Der Zugriff läuft über SeaORM als Zwischenschicht, damit ein späterer Wechsel zu PostgreSQL möglich bleibt.
 - D2: Das Schema nutzt nur, was beide Datenbanken können: keine SQLite-Sonderfunktionen, keine dynamische Typisierung, Fremdschlüssel sind eingeschaltet.
 - D3: Jede Tabelle hat einen ganzzahligen Primärschlüssel `id`.
 - D4: Ein Datum wird als ISO-Text `JJJJ-MM-TT` gespeichert, ein Zeitpunkt als ISO-Text in UTC. Beides lässt sich in PostgreSQL verlustfrei in `DATE` und `TIMESTAMPTZ` überführen.

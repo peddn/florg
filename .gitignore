@@ -1,0 +1,13 @@
+# Rust
+/backend/target/
+
+# Lokale Konfiguration und Datenbanken
+.env
+*.db
+*.db-shm
+*.db-wal
+
+# Editoren und Betriebssystem
+.idea/
+.vscode/
+.DS_Store

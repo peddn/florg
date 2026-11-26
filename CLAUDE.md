@@ -17,7 +17,9 @@ Diese Regeln gelten in jeder Sitzung und haben Vorrang vor Tempo.
 - Kein handgeschriebenes SQL außerhalb von Migrationen und Verbindungsaufbau; Abfragen laufen über SeaORM.
 - Neue API-Endpunkte brauchen eine Sitzung: Sie kommen in `backend/src/routes.rs` zu den geschützten Routen (`protected`). Offen bleiben nur `/api/health` und die Anmeldung selbst.
 - Frontend (`frontend/`): Vue 3 in JavaScript (kein TypeScript) mit Pinia, Vue Router und Tailwind CSS, gebaut mit Vite.
-- Mobile first, kein Offline-Betrieb, eine Instanz pro Lehrer
+- Desktop zuerst: Planung und Verwaltung nutzen die Breite großer Bildschirme. Die Erfassung im Unterricht muss am Handy gut bedienbar sein, alle Seiten bleiben am Handy benutzbar.
+- Oberfläche zuerst in Desktopbreite prüfen und zeigen, zusätzlich in Handybreite.
+- Kein Offline-Betrieb, eine Instanz pro Lehrer
 - Sicherheit hat Vorrang vor Komfort und Tempo. Anmeldung nur per E-Mail-Link (`docs/konzept.md`, Regeln L1 bis L13). Kryptografie, Zufallszahlen, Hashing, Cookies und Mailversand nur aus etablierten Bibliotheken, nie selbst schreiben (Regel L13).
 
 ## Prüfungen vor jedem Pull Request

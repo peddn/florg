@@ -16,7 +16,7 @@ Der Hauptnutzen ist Zeitersparnis: Der Unterrichtsnachweis entsteht aus der Plan
 | Betrieb | Eine Instanz pro Lehrer und Schule auf einem privat gemieteten Server; ein Konto, keine Rollen. Wer an mehreren Schulen unterrichtet, betreibt mehrere Instanzen |
 | Anmeldung | Nur per Link an die hinterlegte E-Mail-Adresse, kein Passwort |
 | Sicherheit | Hat Vorrang vor Komfort und Tempo |
-| Geräte | Mobile first; Zeugnisphase für Laptop oder Tablet ausgelegt |
+| Geräte | Hauptnutzung am Desktop. Die Erfassung im Unterricht (Anwesenheit, Beobachtung) muss am Handy gut bedienbar sein |
 | Offline | Nicht nötig |
 | Backend | Rust mit axum; SQLite über SeaORM als Zwischenschicht, ein späterer Wechsel zu PostgreSQL bleibt möglich |
 | Frontend | Vue.js in JavaScript (kein TypeScript) mit Pinia und Router, Tailwind CSS, gebaut mit Vite |
@@ -228,7 +228,7 @@ Nicht im Startkatalog: 1.1 und alle weiteren entwicklungsbezogenen Abschnitte, 1
 - L6: Der Link meldet nicht direkt an, sondern führt auf eine Seite mit Bestätigungsknopf. So verbrauchen Mail-Scanner das Token nicht.
 - L7: Anforderungen von Links sind begrenzt, damit niemand das Postfach flutet: höchstens 3 Links in 15 Minuten. Es zählen nur Anforderungen mit der Adresse des Kontos. Wer die Adresse nicht kennt, löst keine Mail aus und kann die Grenze nicht ausschöpfen.
 - L8: Eine Sitzung gilt 30 Tage ab der letzten Nutzung. Das Sitzungs-Cookie ist `HttpOnly`, `Secure` und `SameSite`.
-- L9: "Abmelden" ist der Standard und beendet nur die Sitzung des aktuellen Geräts. "Überall abmelden" ist die zweite, zurückhaltend dargestellte Option und beendet sofort alle Sitzungen. Eine Liste einzelner Geräte gibt es nicht.
+- L9: "Abmelden" ist der Standard, steht in der Kopfzeile und beendet nur die Sitzung des aktuellen Geräts. "Überall abmelden" ist die zweite Option, steht auf der Seite "Konto" und beendet sofort alle Sitzungen. Eine Liste einzelner Geräte gibt es nicht.
 - L10: Die Anwendung ist nur über HTTPS erreichbar. Im Betrieb übernimmt das ein vorgeschalteter Reverse-Proxy; florg selbst lauscht nur lokal. Die öffentliche Adresse steht in der Konfiguration (`FLORG_PUBLIC_URL`). Anmeldelinks werden nur aus ihr gebildet, nie aus Angaben der Anfrage.
 - L11: Die SMTP-Zugangsdaten stehen in einer Konfigurationsdatei oder in Umgebungsvariablen auf dem Server, nie in der Datenbank und nicht in der Oberfläche. Die Verbindung zum Mailserver ist verschlüsselt.
 - L11a: Sind keine SMTP-Werte gesetzt, schreibt florg die Mail mit dem Anmeldelink ins Server-Protokoll, statt sie zu verschicken. Das dient der Entwicklung und als Notweg, wenn der Mailversand ausfällt. L5 gilt unverändert: Der Link aus dem Protokoll funktioniert nur in dem Browser, der ihn angefordert hat. florg warnt beim Start, und die Anmeldeseite weist darauf hin. Unvollständige SMTP-Werte sind ein Startfehler.
@@ -247,7 +247,8 @@ Nicht im Startkatalog: 1.1 und alle weiteren entwicklungsbezogenen Abschnitte, 1
 
 ### Bedienung
 
-- Erfassung im Unterricht ist für das Handy ausgelegt, Planung und Zeugnisphase auch für große Bildschirme.
+- Planung, Verwaltung und Zeugnisphase sind für den Desktop ausgelegt und nutzen dessen Breite, etwa mit Tabellen. Die Erfassung im Unterricht ist für das Handy ausgelegt. Alle Seiten bleiben am Handy benutzbar.
+- Eine Kopfzeile trägt links die Navigation und rechts "Konto" und "Abmelden". Eine Statusleiste am unteren Bildschirmrand zeigt rechts, ob das Backend erreichbar ist.
 - Ausgaben sind als Text kopierbar und als PDF druckbar.
 
 ## 12 Nicht im Umfang

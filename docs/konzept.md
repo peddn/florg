@@ -56,7 +56,8 @@ Die Module bauen aufeinander auf: Zeitgerüst → Jahresplanung → Wochenplanun
 | Sitzung | `session` | Angemeldeter Zustand auf einem Gerät |
 | Unterrichtsfreie Zeit | `school_free_period` | Ferien, Feiertag oder sonstiger freier Tag |
 | Fach | `subject` | Unterrichtsfach einer Lerngruppe |
-| Klasse | `school_class` | Klasse in einem Schuljahr, z. B. 7a |
+| Klasse | `school_class` | Bezeichnung einer Klasse, z. B. 7a. Gilt über Schuljahre hinweg und wird einem Schüler je Schuljahr zugeordnet |
+| Schuljahreseintrag | `enrollment` | Ein Schüler in einem Schuljahr, optional mit Klasse |
 | Stundenplaneintrag | `timetable_entry` | Eine Stunde im Wochenraster eines Stundenplans |
 | Unterrichtsnachweis | `lesson_record` | Dokumentation eines gehaltenen Unterrichtsblocks |
 | Fehlzeit | `absence` | Abwesenheit eines Schülers in einem Unterrichtsblock |
@@ -131,7 +132,9 @@ Nicht im Startkatalog: 1.1 und alle weiteren entwicklungsbezogenen Abschnitte, 1
 - Z5: Ein Block lässt sich von Hand teilen, etwa wenn die zweite Stunde ausfällt.
 - Z6: Blöcke können als Ausfall markiert werden (Krankheit, Wandertag, Praktikum), mit optionalem Grund.
 - Z7: Das verfügbare Stundenbudget je Gruppe ist die Summe der Dauern aller nicht ausgefallenen Blöcke. Es rechnet sich laufend neu.
-- Z8: Eine Lerngruppe besteht aus Schülern, die aus verschiedenen Klassen stammen können. Jeder Schüler hat Vorname, Nachname, Klasse und Anrede (er, sie oder nur Vorname).
+- Z8: Eine Lerngruppe besteht aus Schülern, die aus verschiedenen Klassen stammen können. Jeder Schüler hat Vorname und Anrede (er, sie oder nur Vorname). Nachname und Klasse sind optional.
+- Z8a: Entscheidend ist die Zugehörigkeit zur Lerngruppe. Die Klasse ist ein Merkmal des Schülers im Schuljahr: eine Bezeichnung aus einer gepflegten Liste. Ein Schüler kann ohne Klasse in einer Lerngruppe sein.
+- Z8b: Gespeichert wird die Anrede, nicht das Geschlecht. Mehr braucht florg für die Zeugnisbemerkungen nicht (S7).
 - Z9: Schüler behalten ihre Historie über Schuljahre hinweg.
 
 ## 5 Modul Jahresplanung
@@ -249,7 +252,9 @@ Nicht im Startkatalog: 1.1 und alle weiteren entwicklungsbezogenen Abschnitte, 1
 
 - Planung, Verwaltung und Zeugnisphase sind für den Desktop ausgelegt und nutzen dessen Breite, etwa mit Tabellen. Die Erfassung im Unterricht ist für das Handy ausgelegt. Alle Seiten bleiben am Handy benutzbar.
 - Formulare zum Anlegen und Ändern sowie Rückfragen vor dem Löschen öffnen sich als Modal über der Seite.
-- Eine Kopfzeile trägt links die Navigation und rechts "Konto" und "Abmelden". Eine Statusleiste am unteren Bildschirmrand zeigt rechts, ob das Backend erreichbar ist.
+- Die Kopfzeile hat zwei Zeilen. Die erste gilt allgemein: links "Schuljahre", "Fächer" und "Klassen", rechts "Konto" und "Abmelden". Die zweite gilt für das aktive Schuljahr: links dessen Auswahl, daneben die Seiten dieses Schuljahres. Gibt es noch kein Schuljahr, entfällt die zweite Zeile.
+- Aktiv ist das Schuljahr, das zuletzt gewählt wurde. Ohne Wahl ist es das Schuljahr, in dem das heutige Datum liegt, sonst das jüngste.
+- Eine Statusleiste am unteren Bildschirmrand zeigt rechts, ob das Backend erreichbar ist.
 - Ausgaben sind als Text kopierbar und als PDF druckbar.
 
 ## 12 Nicht im Umfang
@@ -296,14 +301,16 @@ Das Datenmodell wird grob über alle Stufen entworfen und nur für die jeweils n
 
 ### Aufteilung von Stufe 1
 
-Stufe 1 wäre als ein einziger Pull Request zu groß zum Testen. Sie wird deshalb in fünf Pull Requests umgesetzt. Jeder ist für sich prüfbar.
+Stufe 1 wäre als ein einziger Pull Request zu groß zum Testen. Sie wird deshalb in mehreren Pull Requests umgesetzt. Jeder ist für sich prüfbar.
 
 | Nr. | Inhalt | Was danach testbar ist | Stand |
 | --- | --- | --- | --- |
 | A | Grundgerüst: Projektstruktur, Backend und Frontend starten, Datenbank wird angelegt | Die Seite lädt und zeigt, dass das Backend antwortet | erledigt |
 | B | Anmeldung: Konto, E-Mail-Link, Sitzung, die zwei Server-Befehle | Anmelden per Link, abmelden, überall abmelden | erledigt |
 | C | Schuljahr und unterrichtsfreie Zeiten, Feiertagsberechnung, Ferien-Datendatei | Schuljahr anlegen, Ferien und Feiertage sind vorgefüllt | erledigt |
-| D | Fächer, Klassen, Schüler, Lerngruppen | Stammdaten pflegen | offen |
+| D1 | Zweite Menüzeile mit Auswahl des Schuljahres, Fächer, Klassen | Schuljahr umschalten, Fächer und Klassen pflegen | erledigt |
+| D2 | Schüler mit Schuljahreseintrag, CSV-Import | Schüler eines Schuljahres pflegen und als Liste einlesen | offen |
+| D3 | Lerngruppen mit Mitgliedern | Lerngruppen anlegen und Schüler zuordnen | offen |
 | E | Stundenplan mit A/B-Wochen, Blockerzeugung, Stundenbudget | Alle Blöcke des Jahres und das Budget je Gruppe | offen |
 
 ## 15 Arbeitsregeln für die Umsetzung

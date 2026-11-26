@@ -49,11 +49,18 @@ export const useLearningGroupsStore = defineStore('learningGroups', {
         api('POST', `/learning-groups/${id}/members`, { student_ids: studentIds }),
       )
     },
-    setMemberPeriod(id, studentId, period) {
-      return this.changeCurrent(api('PUT', `/learning-groups/${id}/members/${studentId}`, period))
+    // Another period of a student who returns to the group.
+    addPeriod(id, studentId, period) {
+      return this.changeCurrent(
+        api('POST', `/learning-groups/${id}/memberships`, { student_id: studentId, ...period }),
+      )
     },
-    async removeMember(id, studentId) {
-      const result = await api('DELETE', `/learning-groups/${id}/members/${studentId}`)
+    // A membership is one period of a student in the group.
+    setPeriod(membershipId, period) {
+      return this.changeCurrent(api('PUT', `/group-memberships/${membershipId}`, period))
+    },
+    async removePeriod(id, membershipId) {
+      const result = await api('DELETE', `/group-memberships/${membershipId}`)
       if (result.ok) {
         await this.loadCurrent(id)
       }

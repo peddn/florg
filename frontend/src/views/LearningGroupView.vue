@@ -27,15 +27,44 @@ const busy = ref(false)
 const error = ref(null)
 
 // The open window, or null: { type, member? } with the types 'edit',
-// 'delete', 'add', 'period' and 'remove'.
+// 'delete', 'add', 'period', 'rejoin' and 'remove'. `member` is one row,
+// i.e. one period of a student.
 const dialog = ref(null)
 const period = reactive({ joined_on: '', left_on: '' })
 
-// Students of the school year who are not in the group yet.
+// Students of the school year who have never been in the group.
 const candidates = computed(() => {
-  const members = new Set((group.value?.members ?? []).map((member) => member.id))
+  const members = new Set((group.value?.members ?? []).map((member) => member.student_id))
   return (students.list ?? []).filter((student) => !members.has(student.id))
 })
+
+// A student with several periods counts once.
+const studentCount = computed(
+  () => new Set((group.value?.members ?? []).map((member) => member.student_id)).size,
+)
+
+// Number of periods per student, to word the questions.
+const periodsOf = computed(() => {
+  const counts = new Map()
+  for (const member of group.value?.members ?? []) {
+    counts.set(member.student_id, (counts.get(member.student_id) ?? 0) + 1)
+  }
+  return counts
+})
+
+// A student can return if their last period has ended. Rows of a student
+// are sorted by date, so the last row is the latest period.
+function canRejoin(member) {
+  const rows = group.value.members.filter((row) => row.student_id === member.student_id)
+  return member.left_on !== null && rows[rows.length - 1].id === member.id
+}
+
+// The day after a date, as an ISO date.
+function dayAfter(iso) {
+  const date = new Date(`${iso}T00:00:00Z`)
+  date.setUTCDate(date.getUTCDate() + 1)
+  return date.toISOString().slice(0, 10)
+}
 
 const listRoute = computed(() => ({
   name: 'learningGroups',
@@ -68,6 +97,10 @@ function show(type, member = null) {
   if (type === 'period') {
     period.joined_on = member.joined_on ?? ''
     period.left_on = member.left_on ?? ''
+  }
+  if (type === 'rejoin') {
+    period.joined_on = ''
+    period.left_on = ''
   }
   if (type === 'edit') {
     subjects.load()
@@ -112,17 +145,33 @@ function addMembers(studentIds) {
   return run(store.addMembers(group.value.id, studentIds))
 }
 
+function currentPeriod() {
+  return { joined_on: period.joined_on || null, left_on: period.left_on || null }
+}
+
 function savePeriod() {
-  return run(
-    store.setMemberPeriod(group.value.id, dialog.value.member.id, {
-      joined_on: period.joined_on || null,
-      left_on: period.left_on || null,
-    }),
-  )
+  return run(store.setPeriod(dialog.value.member.id, currentPeriod()))
+}
+
+function rejoin() {
+  return run(store.addPeriod(group.value.id, dialog.value.member.student_id, currentPeriod()))
 }
 
 function removeMember() {
-  return run(store.removeMember(group.value.id, dialog.value.member.id))
+  return run(store.removePeriod(group.value.id, dialog.value.member.id))
+}
+
+// Wording of the question before removing a row.
+function removeMessage(member) {
+  if (!member) {
+    return ''
+  }
+  const name = fullName(member)
+  if (periodsOf.value.get(member.student_id) > 1) {
+    const text = periodText(member) || 'ganzes Schuljahr'
+    return `Dieser Zeitraum von „${name}“ (${text}) wird entfernt. Die anderen Zeiträume bleiben.`
+  }
+  return `„${name}“ wird aus der Lerngruppe entfernt und bleibt im Schuljahr erhalten.`
 }
 
 // "seit …", "bis …" or both. Empty for the whole school year.
@@ -173,7 +222,7 @@ function periodText(member) {
 
       <div class="mt-6 flex items-center justify-between gap-3">
         <h2 class="text-xl font-semibold" data-testid="member-count">
-          {{ group.members.length }} Schüler
+          {{ studentCount }} Schüler
         </h2>
         <button
           type="button"
@@ -207,6 +256,15 @@ function periodText(member) {
               <td class="px-4 py-2.5">{{ member.school_class_name }}</td>
               <td class="px-4 py-2.5 text-sm text-slate-600">{{ periodText(member) }}</td>
               <td class="px-4 py-2.5 text-right whitespace-nowrap">
+                <button
+                  v-if="canRejoin(member)"
+                  type="button"
+                  class="rounded-lg px-2 py-1 text-sm font-medium text-teal-800 hover:bg-teal-50"
+                  :aria-label="`${fullName(member)} wieder aufnehmen`"
+                  @click="show('rejoin', member)"
+                >
+                  Wieder aufnehmen
+                </button>
                 <button
                   type="button"
                   class="rounded-lg px-2 py-1 text-sm font-medium text-teal-800 hover:bg-teal-50"
@@ -313,6 +371,60 @@ function periodText(member) {
         </form>
       </ModalDialog>
 
+      <ModalDialog
+        :open="dialog?.type === 'rejoin'"
+        :title="dialog?.type === 'rejoin' ? `${fullName(dialog.member)} wieder aufnehmen` : ''"
+        :description="
+          dialog?.type === 'rejoin'
+            ? `Der Schüler hat die Gruppe am ${formatDate(dialog.member.left_on)} verlassen. Er bekommt einen neuen Zeitraum, der frühere bleibt erhalten.`
+            : ''
+        "
+        @update:open="setOpen"
+      >
+        <form v-if="dialog?.type === 'rejoin'" class="grid gap-3" @submit.prevent="rejoin">
+          <div class="grid gap-3 sm:grid-cols-2">
+            <label class="block text-sm font-medium text-slate-700">
+              Wieder in der Gruppe ab
+              <input
+                v-model="period.joined_on"
+                type="date"
+                required
+                :min="dayAfter(dialog.member.left_on)"
+                :max="period.left_on || year?.end_date"
+                class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-base"
+              />
+            </label>
+            <label class="block text-sm font-medium text-slate-700">
+              bis <span class="font-normal text-slate-500">(optional)</span>
+              <input
+                v-model="period.left_on"
+                type="date"
+                :min="period.joined_on || dayAfter(dialog.member.left_on)"
+                :max="year?.end_date"
+                class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-base"
+              />
+            </label>
+          </div>
+          <p v-if="error" class="text-sm text-red-700" role="alert">{{ error }}</p>
+          <div class="mt-2 flex justify-end gap-2">
+            <button
+              type="button"
+              class="rounded-lg px-4 py-2 font-medium text-slate-600 hover:bg-slate-100"
+              @click="setOpen(false)"
+            >
+              Abbrechen
+            </button>
+            <BusyButton
+              type="submit"
+              class="rounded-lg bg-teal-700 px-4 py-2 font-medium text-white hover:bg-teal-800"
+              :busy="busy"
+            >
+              Aufnehmen
+            </BusyButton>
+          </div>
+        </form>
+      </ModalDialog>
+
       <ConfirmDialog
         :open="dialog?.type === 'delete'"
         title="Lerngruppe löschen?"
@@ -325,8 +437,8 @@ function periodText(member) {
 
       <ConfirmDialog
         :open="dialog?.type === 'remove'"
-        title="Schüler entfernen?"
-        :message="`„${dialog?.member ? fullName(dialog.member) : ''}“ wird aus der Lerngruppe entfernt und bleibt im Schuljahr erhalten.`"
+        :title="periodsOf.get(dialog?.member?.student_id) > 1 ? 'Zeitraum entfernen?' : 'Schüler entfernen?'"
+        :message="removeMessage(dialog?.member)"
         confirm-label="Entfernen"
         :busy="busy"
         :error="error"

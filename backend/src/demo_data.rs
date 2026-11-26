@@ -11,7 +11,10 @@ use anyhow::{Result, bail};
 use std::collections::HashMap;
 
 use chrono::{Duration, NaiveDate};
-use sea_orm::{ConnectionTrait, DatabaseConnection, EntityTrait, PaginatorTrait, TransactionTrait};
+use sea_orm::{
+    ColumnTrait, ConnectionTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
+    TransactionTrait,
+};
 
 use crate::{
     calendar::{self, SchoolYearTemplate},
@@ -19,7 +22,7 @@ use crate::{
         enrollment, group_membership, learning_group, school_class, school_free_period,
         school_year, student, student::FormOfAddress, subject,
     },
-    learning_group::{insert as insert_group, insert_members, set_member_period},
+    learning_group::{add_period, insert as insert_group, insert_members, set_period},
     school_class::insert as insert_class,
     school_year::insert_with_free_periods,
     student::insert_student,
@@ -86,10 +89,12 @@ const GROUPS: [GroupSpec; 8] = [
     ),
 ];
 
-/// One student changes from the first to the second of these groups this
-/// many days after the first school day, as an example of a change during
-/// the school year.
-const GROUP_CHANGE: (&str, &str, i64) = ("8a/b Technik Gruppe 1", "8a/b Technik Gruppe 2", 154);
+/// One student changes from the first to the second of these groups and
+/// later back, as an example of changes during the school year: the last
+/// day in the first group and the first day back, counted in days after the
+/// first school day.
+const GROUP_CHANGE: (&str, &str, i64, i64) =
+    ("8a/b Technik Gruppe 1", "8a/b Technik Gruppe 2", 154, 223);
 
 /// Students that have not been assigned to a class yet.
 const STUDENTS_WITHOUT_CLASS: usize = 2;
@@ -353,22 +358,29 @@ async fn fill(db: &impl ConnectionTrait, today: NaiveDate) -> Result<String> {
         groups.insert(name, (group, members));
     }
 
-    // The first member of one group changes to another during the year.
-    let (from, to, after_days) = GROUP_CHANGE;
+    // The first member of one group changes to another and later returns.
+    let (from, to, left_after, back_after) = GROUP_CHANGE;
     let (from_group, from_members) = &groups[from];
     let (to_group, _) = &groups[to];
     let student_id = from_members[0];
-    let last_day = year.start_date + Duration::days(after_days);
-    set_member_period(db, from_group, student_id, None, Some(last_day)).await?;
-    insert_members(db, to_group, &[student_id]).await?;
-    set_member_period(
+    let left_on = year.start_date + Duration::days(left_after);
+    let back_on = year.start_date + Duration::days(back_after);
+    let first_period = group_membership::Entity::find()
+        .filter(group_membership::Column::LearningGroupId.eq(from_group.id))
+        .filter(group_membership::Column::StudentId.eq(student_id))
+        .one(db)
+        .await?
+        .expect("the student was just added");
+    set_period(db, first_period.id, None, Some(left_on)).await?;
+    add_period(
         db,
         to_group,
         student_id,
-        Some(last_day + Duration::days(1)),
-        None,
+        Some(left_on + Duration::days(1)),
+        Some(back_on - Duration::days(1)),
     )
     .await?;
+    add_period(db, from_group, student_id, Some(back_on), None).await?;
 
     Ok(year.name)
 }

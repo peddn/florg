@@ -38,9 +38,10 @@ pub fn routes() -> Router<AppState> {
             get(detail).put(update).delete(remove),
         )
         .route("/learning-groups/{id}/members", post(add_members))
+        .route("/learning-groups/{id}/memberships", post(add_membership))
         .route(
-            "/learning-groups/{id}/members/{student_id}",
-            put(update_member).delete(remove_member),
+            "/group-memberships/{id}",
+            put(update_membership).delete(remove_membership),
         )
 }
 
@@ -65,11 +66,14 @@ struct GroupDetail {
     members: Vec<Member>,
 }
 
-/// A student in a learning group, in the order of the student list.
+/// One period of a student in a learning group. A student who left and came
+/// back has several, one row each. Rows follow the order of the student
+/// list, periods of the same student by date.
 #[derive(Serialize)]
 struct Member {
-    /// Id of the student.
+    /// Id of the membership.
     id: i32,
+    student_id: i32,
     first_name: String,
     last_name: Option<String>,
     form_of_address: FormOfAddress,
@@ -90,7 +94,14 @@ struct MembersInput {
 }
 
 #[derive(Deserialize)]
-struct MemberInput {
+struct PeriodInput {
+    joined_on: Option<NaiveDate>,
+    left_on: Option<NaiveDate>,
+}
+
+#[derive(Deserialize)]
+struct MembershipInput {
+    student_id: i32,
     joined_on: Option<NaiveDate>,
     left_on: Option<NaiveDate>,
 }
@@ -180,8 +191,9 @@ pub async fn insert(
     .await?)
 }
 
-/// Makes students members of a learning group. Students who already are
-/// members are skipped. Everyone must be enrolled in the school year of
+/// Makes students members of a learning group for the whole school year.
+/// Students who have any period in the group already are skipped; a student
+/// who returns gets a new period through `add_period`. Everyone must be enrolled in the school year of
 /// the group.
 pub async fn insert_members(
     db: &impl ConnectionTrait,
@@ -225,13 +237,29 @@ pub async fn insert_members(
     Ok(())
 }
 
-/// Checks and stores the period of a membership.
-pub async fn set_member_period(
+/// First and last day a period covers. Missing dates stand for the limits
+/// of the school year (data model, `group_membership`).
+fn effective(
+    year: &school_year::Model,
+    joined_on: Option<NaiveDate>,
+    left_on: Option<NaiveDate>,
+) -> (NaiveDate, NaiveDate) {
+    (
+        joined_on.unwrap_or(year.start_date),
+        left_on.unwrap_or(year.end_date),
+    )
+}
+
+/// Checks a period of a student in a group: within the school year, in
+/// order, and without overlapping another period of the same student in
+/// the same group. `except_id` is the membership being changed.
+async fn check_period(
     db: &impl ConnectionTrait,
     group: &learning_group::Model,
     student_id: i32,
     joined_on: Option<NaiveDate>,
     left_on: Option<NaiveDate>,
+    except_id: Option<i32>,
 ) -> Result<(), ApiError> {
     let year = find_year(db, group.school_year_id).await?;
     let outside = |date: Option<NaiveDate>| {
@@ -242,29 +270,92 @@ pub async fn set_member_period(
             "Eintritt und Austritt müssen im Schuljahr liegen.",
         ));
     }
-    if let (Some(joined_on), Some(left_on)) = (joined_on, left_on)
-        && joined_on > left_on
-    {
+    let (first, last) = effective(&year, joined_on, left_on);
+    if first > last {
         return Err(ApiError::invalid("Der Eintritt liegt nach dem Austritt."));
     }
 
-    let membership = find_membership(db, group.id, student_id).await?;
+    let overlaps = memberships_of(db, vec![group.id])
+        .await?
+        .iter()
+        .filter(|other| other.student_id == student_id && Some(other.id) != except_id)
+        .any(|other| {
+            let (other_first, other_last) = effective(&year, other.joined_on, other.left_on);
+            first <= other_last && other_first <= last
+        });
+    if overlaps {
+        return Err(ApiError::invalid(
+            "Der Zeitraum überschneidet sich mit einem anderen Zeitraum dieses Schülers in der Lerngruppe.",
+        ));
+    }
+    Ok(())
+}
+
+/// Changes the period of a membership.
+pub async fn set_period(
+    db: &impl ConnectionTrait,
+    membership_id: i32,
+    joined_on: Option<NaiveDate>,
+    left_on: Option<NaiveDate>,
+) -> Result<group_membership::Model, ApiError> {
+    let membership = find_membership(db, membership_id).await?;
+    let group = find_group(db, membership.learning_group_id).await?;
+    check_period(
+        db,
+        &group,
+        membership.student_id,
+        joined_on,
+        left_on,
+        Some(membership.id),
+    )
+    .await?;
+
     let mut membership = membership.into_active_model();
     membership.joined_on = Set(joined_on);
     membership.left_on = Set(left_on);
     membership.updated_at = Set(now());
-    membership.update(db).await?;
-    Ok(())
+    Ok(membership.update(db).await?)
+}
+
+/// Adds a period of a student in a group, e.g. when the student returns
+/// after having left it. The student must be enrolled in the school year.
+pub async fn add_period(
+    db: &impl ConnectionTrait,
+    group: &learning_group::Model,
+    student_id: i32,
+    joined_on: Option<NaiveDate>,
+    left_on: Option<NaiveDate>,
+) -> Result<group_membership::Model, ApiError> {
+    let enrolled = load_students(db, group.school_year_id)
+        .await?
+        .iter()
+        .any(|student| student.id == student_id);
+    if !enrolled {
+        return Err(ApiError::invalid(
+            "Der Schüler gehört nicht zum Schuljahr der Lerngruppe.",
+        ));
+    }
+    check_period(db, group, student_id, joined_on, left_on, None).await?;
+
+    let now = now();
+    Ok(group_membership::ActiveModel {
+        learning_group_id: Set(group.id),
+        student_id: Set(student_id),
+        joined_on: Set(joined_on),
+        left_on: Set(left_on),
+        created_at: Set(now),
+        updated_at: Set(now),
+        ..Default::default()
+    }
+    .insert(db)
+    .await?)
 }
 
 async fn find_membership(
     db: &impl ConnectionTrait,
-    group_id: i32,
-    student_id: i32,
+    id: i32,
 ) -> Result<group_membership::Model, ApiError> {
-    group_membership::Entity::find()
-        .filter(group_membership::Column::LearningGroupId.eq(group_id))
-        .filter(group_membership::Column::StudentId.eq(student_id))
+    group_membership::Entity::find_by_id(id)
         .one(db)
         .await?
         .ok_or(ApiError::NOT_FOUND)
@@ -296,27 +387,37 @@ async fn load_detail(db: &impl ConnectionTrait, id: i32) -> Result<GroupDetail, 
         .one(db)
         .await?
         .ok_or(ApiError::NOT_FOUND)?;
-    let memberships: HashMap<i32, group_membership::Model> = memberships_of(db, vec![id])
-        .await?
-        .into_iter()
-        .map(|membership| (membership.student_id, membership))
-        .collect();
+    // Periods of each student, by date. A missing start comes first.
+    let mut periods: HashMap<i32, Vec<group_membership::Model>> = HashMap::new();
+    for membership in memberships_of(db, vec![id]).await? {
+        periods
+            .entry(membership.student_id)
+            .or_default()
+            .push(membership);
+    }
+    for list in periods.values_mut() {
+        list.sort_by_key(|membership| membership.joined_on);
+    }
 
     // The student list is already in display order.
     let members = load_students(db, group.school_year_id)
         .await?
         .into_iter()
-        .filter_map(|student: StudentRow| {
-            let membership = memberships.get(&student.id)?;
-            Some(Member {
-                id: student.id,
-                first_name: student.first_name,
-                last_name: student.last_name,
-                form_of_address: student.form_of_address,
-                school_class_name: student.school_class_name,
-                joined_on: membership.joined_on,
-                left_on: membership.left_on,
-            })
+        .flat_map(|student: StudentRow| {
+            periods
+                .remove(&student.id)
+                .unwrap_or_default()
+                .into_iter()
+                .map(move |membership| Member {
+                    id: membership.id,
+                    student_id: student.id,
+                    first_name: student.first_name.clone(),
+                    last_name: student.last_name.clone(),
+                    form_of_address: student.form_of_address,
+                    school_class_name: student.school_class_name.clone(),
+                    joined_on: membership.joined_on,
+                    left_on: membership.left_on,
+                })
         })
         .collect();
 
@@ -346,12 +447,14 @@ async fn list(
         .into_iter()
         .map(|subject| (subject.id, subject))
         .collect();
-    let mut member_counts: HashMap<i32, usize> = HashMap::new();
+    // A student with several periods in a group counts once.
+    let mut members: HashMap<i32, HashSet<i32>> = HashMap::new();
     let group_ids = groups.iter().map(|group| group.id).collect();
     for membership in memberships_of(&state.db, group_ids).await? {
-        *member_counts
+        members
             .entry(membership.learning_group_id)
-            .or_default() += 1;
+            .or_default()
+            .insert(membership.student_id);
     }
 
     let summaries = groups
@@ -364,7 +467,7 @@ async fn list(
                 subject_id: subject.id,
                 subject_name: subject.name.clone(),
                 subject_short_name: subject.short_name.clone(),
-                member_count: member_counts.get(&group.id).copied().unwrap_or_default(),
+                member_count: members.get(&group.id).map_or(0, HashSet::len),
             })
         })
         .collect();
@@ -443,18 +546,18 @@ async fn add_members(
     Ok(Json(detail))
 }
 
-/// Changes since when and until when a student belongs to the group.
-async fn update_member(
+/// Adds another period of a student, e.g. after a return to the group.
+async fn add_membership(
     State(state): State<AppState>,
-    Path((id, student_id)): Path<(i32, i32)>,
-    Json(input): Json<MemberInput>,
+    Path(id): Path<i32>,
+    Json(input): Json<MembershipInput>,
 ) -> Result<Json<GroupDetail>, ApiError> {
     let transaction = state.db.begin().await?;
     let group = find_group(&transaction, id).await?;
-    set_member_period(
+    add_period(
         &transaction,
         &group,
-        student_id,
+        input.student_id,
         input.joined_on,
         input.left_on,
     )
@@ -464,12 +567,26 @@ async fn update_member(
     Ok(Json(detail))
 }
 
-async fn remove_member(
+/// Changes since when and until when a period lasts.
+async fn update_membership(
     State(state): State<AppState>,
-    Path((id, student_id)): Path<(i32, i32)>,
+    Path(id): Path<i32>,
+    Json(input): Json<PeriodInput>,
+) -> Result<Json<GroupDetail>, ApiError> {
+    let transaction = state.db.begin().await?;
+    let membership = set_period(&transaction, id, input.joined_on, input.left_on).await?;
+    let detail = load_detail(&transaction, membership.learning_group_id).await?;
+    transaction.commit().await?;
+    Ok(Json(detail))
+}
+
+/// Removes one period. Other periods of the same student stay.
+async fn remove_membership(
+    State(state): State<AppState>,
+    Path(id): Path<i32>,
 ) -> Result<StatusCode, ApiError> {
-    let membership = find_membership(&state.db, id, student_id).await?;
-    group_membership::Entity::delete_by_id(membership.id)
+    find_membership(&state.db, id).await?;
+    group_membership::Entity::delete_by_id(id)
         .exec(&state.db)
         .await?;
     Ok(StatusCode::NO_CONTENT)

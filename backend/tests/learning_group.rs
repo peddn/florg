@@ -111,6 +111,20 @@ impl Fixture {
             .await
     }
 
+    /// Address of the period of a student, the only one or the `index`-th.
+    async fn period_uri(&mut self, group_uri: &str, student: i64, index: usize) -> String {
+        let detail = self.get(group_uri).await;
+        let id = detail["members"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|member| member["student_id"] == student)
+            .nth(index)
+            .unwrap_or_else(|| panic!("period {index} of student {student} exists"))["id"]
+            .clone();
+        format!("/api/group-memberships/{id}")
+    }
+
     /// First names of the members, in list order.
     async fn members(&mut self, group_uri: &str) -> Vec<String> {
         self.get(group_uri).await["members"]
@@ -168,8 +182,9 @@ async fn learning_group_endpoints_need_a_session() {
         ("PUT", "/api/learning-groups/1"),
         ("DELETE", "/api/learning-groups/1"),
         ("POST", "/api/learning-groups/1/members"),
-        ("PUT", "/api/learning-groups/1/members/1"),
-        ("DELETE", "/api/learning-groups/1/members/1"),
+        ("POST", "/api/learning-groups/1/memberships"),
+        ("PUT", "/api/group-memberships/1"),
+        ("DELETE", "/api/group-memberships/1"),
     ] {
         let body = Some(value!({ "name": "x", "subject_id": 1, "student_ids": [1] }));
         let response = app.send(&mut browser, method, uri, body).await;
@@ -285,17 +300,13 @@ async fn members_can_be_added_and_removed() {
     assert_eq!(f.members(&group).await, ["Cem", "Anna", "Dana", "Eva"]);
     assert_eq!(f.groups().await, ["Technik Gruppe 1 (Te, 4)"]);
 
-    let member = format!("{group}/members/{anna}");
+    let member = f.period_uri(&group, anna, 0).await;
     let response = f.request("DELETE", &member, None).await;
     assert_eq!(response.status(), StatusCode::NO_CONTENT);
     assert_eq!(f.members(&group).await, ["Cem", "Dana", "Eva"]);
     let response = f.request("DELETE", &member, None).await;
     assert_error(response, StatusCode::NOT_FOUND, "not_found").await;
-    // Never a member.
-    let response = f
-        .request("DELETE", &format!("{group}/members/{ben}"), None)
-        .await;
-    assert_error(response, StatusCode::NOT_FOUND, "not_found").await;
+    let _ = ben;
 }
 
 #[tokio::test]
@@ -325,7 +336,7 @@ async fn membership_can_be_limited_to_a_period() {
     let group = f.group("Technik", technik).await;
     let (anna, ben) = (f.anna, f.ben);
     f.add(&group, &[anna]).await;
-    let member = format!("{group}/members/{anna}");
+    let member = f.period_uri(&group, anna, 0).await;
 
     let detail = f.get(&group).await;
     assert_eq!(detail["members"][0]["joined_on"], Value::Null);
@@ -366,7 +377,112 @@ async fn membership_can_be_limited_to_a_period() {
     assert_eq!(f.get(&group).await["members"][0]["joined_on"], Value::Null);
 
     let response = f
-        .request("PUT", &format!("{group}/members/{ben}"), period(None, None))
+        .request("PUT", "/api/group-memberships/999", period(None, None))
+        .await;
+    assert_error(response, StatusCode::NOT_FOUND, "not_found").await;
+    let _ = ben;
+}
+
+#[tokio::test]
+async fn student_can_leave_and_return() {
+    let mut f = Fixture::new().await;
+    let technik = f.technik;
+    let group = f.group("Technik", technik).await;
+    let (anna, ben) = (f.anna, f.ben);
+    f.add(&group, &[anna, ben]).await;
+    let memberships = format!("{group}/memberships");
+
+    // Anna leaves before the winter holidays and comes back after Easter.
+    let first = f.period_uri(&group, anna, 0).await;
+    let response = f
+        .request("PUT", &first, period(None, Some("2026-12-23")))
+        .await;
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = Some(value!({ "student_id": anna, "joined_on": "2027-04-12", "left_on": null }));
+    let response = f.request("POST", &memberships, body).await;
+    assert_eq!(response.status(), StatusCode::OK);
+    let detail = json(response).await;
+
+    // Two rows for Anna, by date, and she still counts once.
+    let rows: Vec<_> = detail["members"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|member| {
+            format!(
+                "{} {} {}",
+                member["first_name"].as_str().unwrap(),
+                member["joined_on"].as_str().unwrap_or("-"),
+                member["left_on"].as_str().unwrap_or("-")
+            )
+        })
+        .collect();
+    assert_eq!(rows, ["Anna - 2026-12-23", "Anna 2027-04-12 -", "Ben - -"]);
+    assert_eq!(f.groups().await, ["Technik (Te, 2)"]);
+
+    // Adding Anna the usual way changes nothing: she has periods already.
+    f.add(&group, &[anna]).await;
+    assert_eq!(f.members(&group).await, ["Anna", "Anna", "Ben"]);
+
+    // Removing one period keeps the other.
+    let second = f.period_uri(&group, anna, 1).await;
+    let response = f.request("DELETE", &second, None).await;
+    assert_eq!(response.status(), StatusCode::NO_CONTENT);
+    assert_eq!(f.members(&group).await, ["Anna", "Ben"]);
+}
+
+#[tokio::test]
+async fn periods_of_a_student_must_not_overlap() {
+    let mut f = Fixture::new().await;
+    let technik = f.technik;
+    let group = f.group("Technik", technik).await;
+    let (anna, ben) = (f.anna, f.ben);
+    f.add(&group, &[anna, ben]).await;
+    let memberships = format!("{group}/memberships");
+    let first = f.period_uri(&group, anna, 0).await;
+    f.request("PUT", &first, period(None, Some("2026-12-23")))
+        .await;
+
+    let add = |joined_on: &str, left_on: Option<&str>| {
+        Some(value!({ "student_id": anna, "joined_on": joined_on, "left_on": left_on }))
+    };
+    // Overlapping the first period, including its last day.
+    for body in [
+        add("2026-12-23", None),
+        add("2026-10-01", Some("2026-10-31")),
+    ] {
+        let response = f.request("POST", &memberships, body).await;
+        assert_error(response, StatusCode::UNPROCESSABLE_ENTITY, "invalid").await;
+    }
+    // Ben is in the group for the whole year: no room for another period.
+    let body = Some(value!({ "student_id": ben, "joined_on": "2027-05-03", "left_on": null }));
+    let response = f.request("POST", &memberships, body).await;
+    assert_error(response, StatusCode::UNPROCESSABLE_ENTITY, "invalid").await;
+
+    // The day after is fine.
+    let response = f
+        .request("POST", &memberships, add("2026-12-24", None))
+        .await;
+    assert_eq!(response.status(), StatusCode::OK);
+    // Extending the first period into the second is refused.
+    let response = f
+        .request("PUT", &first, period(None, Some("2027-01-15")))
+        .await;
+    assert_error(response, StatusCode::UNPROCESSABLE_ENTITY, "invalid").await;
+    // Changing a period may keep its own dates.
+    let response = f
+        .request("PUT", &first, period(None, Some("2026-12-20")))
+        .await;
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // Only students of the school year, and only existing groups.
+    let other_year = f.school_year("2027/28", "2027-09-14", "2028-07-28").await;
+    let stranger = f.student(other_year, "Finn", "Graf", None).await;
+    let body = Some(value!({ "student_id": stranger, "joined_on": null, "left_on": null }));
+    let response = f.request("POST", &memberships, body.clone()).await;
+    assert_error(response, StatusCode::UNPROCESSABLE_ENTITY, "invalid").await;
+    let response = f
+        .request("POST", "/api/learning-groups/999/memberships", body)
         .await;
     assert_error(response, StatusCode::NOT_FOUND, "not_found").await;
 }

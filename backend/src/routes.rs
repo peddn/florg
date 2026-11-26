@@ -9,7 +9,7 @@ use tower_http::{
     trace::TraceLayer,
 };
 
-use crate::AppState;
+use crate::{AppState, auth};
 
 /// Builds the application router.
 ///
@@ -18,8 +18,13 @@ use crate::AppState;
 /// Vue router can handle client-side routes.
 pub fn router(state: AppState, frontend_dir: Option<&Path>) -> Router {
     // Unknown API paths answer 404 and never fall through to the frontend.
+    // Everything except the health check and the login itself needs a
+    // session. New endpoints belong into `protected`.
+    let protected = auth::http::with_session_check(auth::http::protected_routes(), state.clone());
     let api = Router::new()
         .route("/health", get(health))
+        .merge(auth::http::public_routes())
+        .merge(protected)
         .fallback(|| async { StatusCode::NOT_FOUND });
 
     let mut app = Router::new().nest("/api", api);

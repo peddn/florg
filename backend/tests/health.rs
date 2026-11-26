@@ -9,7 +9,14 @@ use tower::ServiceExt;
 #[tokio::test]
 async fn health_reports_ok_with_reachable_database() {
     let db = db::connect("sqlite::memory:").await.unwrap();
-    let app = routes::router(AppState { db }, None);
+    let app = routes::router(
+        AppState {
+            db,
+            mailer: florg::mail::Mailer::Log,
+            public_url: "http://localhost:5173".to_owned(),
+        },
+        None,
+    );
 
     let response = app
         .oneshot(
@@ -32,7 +39,14 @@ async fn health_reports_ok_with_reachable_database() {
 #[tokio::test]
 async fn unknown_api_path_is_not_found() {
     let db = db::connect("sqlite::memory:").await.unwrap();
-    let app = routes::router(AppState { db }, None);
+    let app = routes::router(
+        AppState {
+            db,
+            mailer: florg::mail::Mailer::Log,
+            public_url: "http://localhost:5173".to_owned(),
+        },
+        None,
+    );
 
     let response = app
         .oneshot(
@@ -58,7 +72,14 @@ async fn frontend_is_served_but_never_for_unknown_api_paths() {
     .unwrap();
 
     let db = db::connect("sqlite::memory:").await.unwrap();
-    let app = routes::router(AppState { db }, Some(&dir));
+    let app = routes::router(
+        AppState {
+            db,
+            mailer: florg::mail::Mailer::Log,
+            public_url: "http://localhost:5173".to_owned(),
+        },
+        Some(&dir),
+    );
 
     let get = |uri: &'static str| {
         let app = app.clone();

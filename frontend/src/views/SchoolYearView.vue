@@ -2,7 +2,9 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import ConfirmDialog from '../components/ConfirmDialog.vue'
 import FreePeriodForm from '../components/FreePeriodForm.vue'
+import ModalDialog from '../components/ModalDialog.vue'
 import SchoolYearForm from '../components/SchoolYearForm.vue'
 import { formatRange, kindLabel } from '../format'
 import { useSchoolYearsStore } from '../stores/schoolYears'
@@ -15,8 +17,10 @@ const year = computed(() => store.current)
 const loadError = ref(null)
 const busy = ref(false)
 const error = ref(null)
-// What is being edited: null, 'year', 'new' or the id of a free period.
-const editing = ref(null)
+
+// The open window, or null: { type, period? } with the types 'editYear',
+// 'deleteYear', 'newPeriod', 'editPeriod' and 'deletePeriod'.
+const dialog = ref(null)
 
 const kindStyles = {
   holiday: 'bg-teal-50 text-teal-800',
@@ -32,26 +36,41 @@ const columns = 'md:grid-cols-[minmax(0,1fr)_7rem_minmax(0,24rem)_10rem]'
 watch(
   () => route.params.id,
   async (id) => {
-    editing.value = null
+    dialog.value = null
     const result = await store.loadCurrent(id)
     loadError.value = result.message
   },
   { immediate: true },
 )
 
-function edit(what) {
+function show(type, period = null) {
   error.value = null
-  editing.value = what
+  dialog.value = { type, period }
 }
 
-// Runs a change and closes the form if it worked.
+function close() {
+  dialog.value = null
+}
+
+// Binds one window to `dialog`: open while its type is the current one.
+function isOpen(type) {
+  return dialog.value?.type === type
+}
+
+function setOpen(open) {
+  if (!open) {
+    close()
+  }
+}
+
+// Runs a change and closes the window if it worked.
 async function run(request) {
   busy.value = true
   error.value = null
   const result = await request
   busy.value = false
   if (result.ok) {
-    editing.value = null
+    close()
   } else {
     error.value = result.message
   }
@@ -63,10 +82,6 @@ function saveYear(input) {
 }
 
 async function removeYear() {
-  const question = `Schuljahr ${year.value.name} mit allen unterrichtsfreien Zeiten löschen?`
-  if (!window.confirm(question)) {
-    return
-  }
   const result = await run(store.remove(year.value.id))
   if (result.ok) {
     await router.replace({ name: 'schoolYears' })
@@ -77,14 +92,12 @@ function addPeriod(input) {
   return run(store.addFreePeriod(year.value.id, input))
 }
 
-function savePeriod(period, input) {
-  return run(store.updateFreePeriod(year.value.id, period.id, input))
+function savePeriod(input) {
+  return run(store.updateFreePeriod(year.value.id, dialog.value.period.id, input))
 }
 
-function removePeriod(period) {
-  if (window.confirm(`„${period.name}“ löschen?`)) {
-    return run(store.removeFreePeriod(year.value.id, period.id))
-  }
+function removePeriod() {
+  return run(store.removeFreePeriod(year.value.id, dialog.value.period.id))
 }
 </script>
 
@@ -99,75 +112,39 @@ function removePeriod(period) {
 
     <template v-else>
       <section class="mt-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <template v-if="editing === 'year'">
-          <h1 class="text-lg font-medium">Schuljahr ändern</h1>
-          <SchoolYearForm
-            class="mt-3"
-            :initial="year"
-            submit-label="Speichern"
-            :busy="busy"
-            :error="error"
-            @submit="saveYear"
-            @cancel="edit(null)"
-          />
-        </template>
-        <template v-else>
-          <h1 class="text-2xl font-semibold">Schuljahr {{ year.name }}</h1>
-          <p class="mt-1 text-slate-600">{{ formatRange(year.start_date, year.end_date) }}</p>
-          <p class="mt-2 text-lg" data-testid="school-days">
-            <span class="font-semibold">{{ year.school_days }}</span> Schultage
-          </p>
-          <div class="mt-3 flex gap-2">
-            <button
-              type="button"
-              class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium"
-              @click="edit('year')"
-            >
-              Ändern
-            </button>
-            <button
-              type="button"
-              class="rounded-lg px-3 py-2 text-sm font-medium text-red-700"
-              @click="removeYear"
-            >
-              Löschen
-            </button>
-          </div>
-          <p v-if="error && editing === null" class="mt-2 text-sm text-red-700" role="alert">
-            {{ error }}
-          </p>
-        </template>
+        <h1 class="text-2xl font-semibold">Schuljahr {{ year.name }}</h1>
+        <p class="mt-1 text-slate-600">{{ formatRange(year.start_date, year.end_date) }}</p>
+        <p class="mt-2 text-lg" data-testid="school-days">
+          <span class="font-semibold">{{ year.school_days }}</span> Schultage
+        </p>
+        <div class="mt-3 flex gap-2">
+          <button
+            type="button"
+            class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-100"
+            @click="show('editYear')"
+          >
+            Ändern
+          </button>
+          <button
+            type="button"
+            class="rounded-lg px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
+            @click="show('deleteYear')"
+          >
+            Löschen
+          </button>
+        </div>
       </section>
 
       <div class="mt-6 flex items-center justify-between gap-3">
         <h2 class="text-xl font-semibold">Unterrichtsfreie Zeiten</h2>
         <button
-          v-if="editing !== 'new'"
           type="button"
-          class="rounded-lg bg-teal-700 px-4 py-2 font-medium text-white active:bg-teal-800"
-          @click="edit('new')"
+          class="rounded-lg bg-teal-700 px-4 py-2 font-medium text-white hover:bg-teal-800"
+          @click="show('newPeriod')"
         >
           Hinzufügen
         </button>
       </div>
-
-      <section
-        v-if="editing === 'new'"
-        class="mt-3 max-w-2xl rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-      >
-        <h3 class="text-lg font-medium">Neue unterrichtsfreie Zeit</h3>
-        <FreePeriodForm
-          class="mt-3"
-          :initial="newPeriod"
-          :min="year.start_date"
-          :max="year.end_date"
-          submit-label="Hinzufügen"
-          :busy="busy"
-          :error="error"
-          @submit="addPeriod"
-          @cancel="edit(null)"
-        />
-      </section>
 
       <p v-if="year.free_periods.length === 0" class="mt-3 text-slate-600">
         Es sind keine unterrichtsfreien Zeiten eingetragen.
@@ -186,18 +163,7 @@ function removePeriod(period) {
         </div>
         <ul class="divide-y divide-slate-200">
           <li v-for="period in year.free_periods" :key="period.id" class="px-4 py-3">
-            <FreePeriodForm
-              v-if="editing === period.id"
-              :initial="period"
-              :min="year.start_date"
-              :max="year.end_date"
-              submit-label="Speichern"
-              :busy="busy"
-              :error="error"
-              @submit="(input) => savePeriod(period, input)"
-              @cancel="edit(null)"
-            />
-            <div v-else class="grid gap-1 md:items-center md:gap-4" :class="columns">
+            <div class="grid gap-1 md:items-center md:gap-4" :class="columns">
               <span class="font-medium">{{ period.name }}</span>
               <span>
                 <span
@@ -215,7 +181,7 @@ function removePeriod(period) {
                   type="button"
                   class="rounded-lg px-2 py-1 text-sm font-medium text-teal-800 hover:bg-teal-50"
                   :aria-label="`${period.name} ändern`"
-                  @click="edit(period.id)"
+                  @click="show('editPeriod', period)"
                 >
                   Ändern
                 </button>
@@ -223,7 +189,7 @@ function removePeriod(period) {
                   type="button"
                   class="rounded-lg px-2 py-1 text-sm font-medium text-red-700 hover:bg-red-50"
                   :aria-label="`${period.name} löschen`"
-                  @click="removePeriod(period)"
+                  @click="show('deletePeriod', period)"
                 >
                   Löschen
                 </button>
@@ -232,6 +198,76 @@ function removePeriod(period) {
           </li>
         </ul>
       </div>
+
+      <ModalDialog
+        :open="isOpen('editYear')"
+        title="Schuljahr ändern"
+        @update:open="setOpen"
+      >
+        <SchoolYearForm
+          :initial="year"
+          submit-label="Speichern"
+          :busy="busy"
+          :error="error"
+          @submit="saveYear"
+          @cancel="close"
+        />
+      </ModalDialog>
+
+      <ModalDialog
+        :open="isOpen('newPeriod')"
+        title="Neue unterrichtsfreie Zeit"
+        @update:open="setOpen"
+      >
+        <FreePeriodForm
+          :initial="newPeriod"
+          :min="year.start_date"
+          :max="year.end_date"
+          submit-label="Hinzufügen"
+          :busy="busy"
+          :error="error"
+          @submit="addPeriod"
+          @cancel="close"
+        />
+      </ModalDialog>
+
+      <ModalDialog
+        :open="isOpen('editPeriod')"
+        title="Unterrichtsfreie Zeit ändern"
+        @update:open="setOpen"
+      >
+        <FreePeriodForm
+          v-if="dialog?.period"
+          :initial="dialog.period"
+          :min="year.start_date"
+          :max="year.end_date"
+          submit-label="Speichern"
+          :busy="busy"
+          :error="error"
+          @submit="savePeriod"
+          @cancel="close"
+        />
+      </ModalDialog>
+
+      <ConfirmDialog
+        :open="isOpen('deleteYear')"
+        title="Schuljahr löschen?"
+        :message="`Das Schuljahr ${year.name} wird mit allen unterrichtsfreien Zeiten gelöscht.`"
+        :busy="busy"
+        :error="error"
+        @confirm="removeYear"
+        @update:open="setOpen"
+      />
+
+      <ConfirmDialog
+        :open="isOpen('deletePeriod')"
+        title="Unterrichtsfreie Zeit löschen?"
+        :message="`„${dialog?.period?.name}“ wird gelöscht.`"
+        :busy="busy"
+        :error="error"
+        @confirm="removePeriod"
+        @update:open="setOpen"
+      />
     </template>
   </main>
 </template>

@@ -59,20 +59,20 @@ defineExpose({
       </label>
     </div>
     <p v-if="error" class="text-sm text-red-700" role="alert">{{ error }}</p>
-    <div class="flex gap-2">
-      <button
-        type="submit"
-        class="rounded-lg bg-teal-700 px-4 py-2 font-medium text-white active:bg-teal-800 disabled:opacity-60"
-        :disabled="busy"
-      >
-        {{ submitLabel }}
-      </button>
+    <div class="mt-2 flex justify-end gap-2">
       <button
         type="button"
-        class="rounded-lg px-4 py-2 font-medium text-slate-600"
+        class="rounded-lg px-4 py-2 font-medium text-slate-600 hover:bg-slate-100"
         @click="emit('cancel')"
       >
         Abbrechen
+      </button>
+      <button
+        type="submit"
+        class="rounded-lg bg-teal-700 px-4 py-2 font-medium text-white hover:bg-teal-800 disabled:opacity-60"
+        :disabled="busy"
+      >
+        {{ submitLabel }}
       </button>
     </div>
   </form>

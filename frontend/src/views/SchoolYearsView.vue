@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import ModalDialog from '../components/ModalDialog.vue'
 import SchoolYearForm from '../components/SchoolYearForm.vue'
 import { formatRange } from '../format'
 import { useSchoolYearsStore } from '../stores/schoolYears'
@@ -54,31 +55,27 @@ async function create(input) {
     <div class="flex items-center justify-between gap-3">
       <h1 class="text-2xl font-semibold">Schuljahre</h1>
       <button
-        v-if="!creating"
         type="button"
-        class="rounded-lg bg-teal-700 px-4 py-2 font-medium text-white active:bg-teal-800"
+        class="rounded-lg bg-teal-700 px-4 py-2 font-medium text-white hover:bg-teal-800"
         @click="startCreating"
       >
         Schuljahr anlegen
       </button>
     </div>
 
-    <section
-      v-if="creating"
-      class="mt-4 max-w-2xl rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+    <ModalDialog
+      v-model:open="creating"
+      title="Neues Schuljahr"
+      description="Ferien und Feiertage werden beim Anlegen eingetragen. Du kannst sie danach ändern."
     >
-      <h2 class="text-lg font-medium">Neues Schuljahr</h2>
-      <p class="mt-1 text-sm text-slate-600">
-        Ferien und Feiertage werden beim Anlegen eingetragen. Du kannst sie danach ändern.
-      </p>
-      <div v-if="openTemplates.length" class="mt-3">
+      <div v-if="openTemplates.length" class="mb-4">
         <p class="text-sm font-medium text-slate-700">Vorlage aus der amtlichen Ferienordnung</p>
         <div class="mt-1 flex flex-wrap gap-2">
           <button
             v-for="template in openTemplates"
             :key="template.name"
             type="button"
-            class="rounded-full border border-teal-700 px-3 py-1 text-sm font-medium text-teal-800"
+            class="rounded-full border border-teal-700 px-3 py-1 text-sm font-medium text-teal-800 hover:bg-teal-50"
             @click="form.fill(template)"
           >
             {{ template.name }}
@@ -87,7 +84,6 @@ async function create(input) {
       </div>
       <SchoolYearForm
         ref="form"
-        class="mt-4"
         :initial="initial"
         submit-label="Anlegen"
         :busy="busy"
@@ -95,11 +91,11 @@ async function create(input) {
         @submit="create"
         @cancel="creating = false"
       />
-    </section>
+    </ModalDialog>
 
     <p v-if="loadError" class="mt-4 text-red-700" role="alert">{{ loadError }}</p>
     <p v-else-if="store.list === null" class="mt-4 text-slate-500">Wird geladen …</p>
-    <p v-else-if="store.list.length === 0 && !creating" class="mt-4 text-slate-600">
+    <p v-else-if="store.list.length === 0" class="mt-4 text-slate-600">
       Es gibt noch kein Schuljahr.
     </p>
     <ul v-else class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

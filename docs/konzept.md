@@ -260,6 +260,9 @@ Nicht im Startkatalog: 1.1 und alle weiteren entwicklungsbezogenen Abschnitte, 1
 
 - Planung, Verwaltung und Zeugnisphase sind für den Desktop ausgelegt und nutzen dessen Breite, etwa mit Tabellen. Die Erfassung im Unterricht ist für das Handy ausgelegt. Alle Seiten bleiben am Handy benutzbar.
 - Formulare zum Anlegen und Ändern sowie Rückfragen vor dem Löschen öffnen sich als Modal über der Seite.
+- Eine Änderung wird erst angezeigt, wenn der Server sie bestätigt hat. Das gilt überall, auch bei der Erfassung im Unterricht. Solange die Anfrage läuft, zeigt das auslösende Element einen Kreisel und ist gesperrt; der Rest der Seite bleibt bedienbar. Bei einem Fehler bleibt der alte Stand stehen, und eine Meldung erscheint. Die Oberfläche zeigt nie einen Wert vorab an, den sie später zurücknehmen müsste.
+- Die Statusleiste zeigt "Speichert …", solange eine Änderung unterwegs ist. Kreisel und Hinweis erscheinen erst nach kurzer Verzögerung, damit bei schneller Verbindung nichts flackert.
+- Listen kommen ohne Blättern aus. Jede Liste ist durch ihren Zusammenhang begrenzt, etwa auf ein Schuljahr oder eine Lerngruppe (siehe Mengengerüst), und lässt sich filtern und durchsuchen.
 - Die Kopfzeile hat zwei Zeilen. Die erste gilt allgemein: links "Schuljahre", "Fächer" und "Klassen", rechts "Konto" und "Abmelden". Die zweite gilt für das aktive Schuljahr: links dessen Auswahl, daneben die Seiten dieses Schuljahres. Gibt es noch kein Schuljahr, entfällt die zweite Zeile.
 - Aktiv ist das Schuljahr, das zuletzt gewählt wurde. Ohne Wahl ist es das Schuljahr, in dem das heutige Datum liegt, sonst das jüngste.
 - Eine Statusleiste am unteren Bildschirmrand zeigt rechts, ob das Backend erreichbar ist.

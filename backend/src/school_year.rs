@@ -18,7 +18,7 @@ use crate::{
     AppState, calendar,
     db::now,
     entity::{
-        enrollment,
+        enrollment, learning_group,
         school_free_period::{self, Kind},
         school_year,
     },
@@ -349,6 +349,15 @@ async fn remove(
     if students > 0 {
         return Err(ApiError::conflict(
             "Das Schuljahr hat noch Schüler. Entferne sie zuerst.",
+        ));
+    }
+    let groups = learning_group::Entity::find()
+        .filter(learning_group::Column::SchoolYearId.eq(id))
+        .count(&transaction)
+        .await?;
+    if groups > 0 {
+        return Err(ApiError::conflict(
+            "Das Schuljahr hat noch Lerngruppen. Lösche sie zuerst.",
         ));
     }
     delete_periods_of(&transaction, id).await?;

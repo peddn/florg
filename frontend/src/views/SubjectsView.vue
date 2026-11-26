@@ -78,7 +78,7 @@ function remove() {
     <p v-if="loadError" class="mt-4 text-red-700" role="alert">{{ loadError }}</p>
     <p v-else-if="store.list === null" class="mt-4 text-slate-500">Wird geladen …</p>
     <p v-else-if="store.list.length === 0" class="mt-4 text-slate-600">Es gibt noch kein Fach.</p>
-    <div v-else class="mt-4 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div v-else class="mt-4 relative overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
       <table class="w-full text-left">
         <thead class="border-b border-slate-200 text-sm text-slate-500">
           <tr>

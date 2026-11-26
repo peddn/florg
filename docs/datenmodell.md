@@ -201,7 +201,7 @@ Ein Schüler in einem Schuljahr (Schuljahreseintrag), optional mit seiner Klasse
 | `school_year_id` | Fremdschlüssel | ja | Schuljahr |
 | `school_class_id` | Fremdschlüssel | nein | Klasse in diesem Schuljahr; leer bedeutet: ohne Klasse |
 
-Ein Schüler hat je Schuljahr höchstens einen Schuljahreseintrag. Wird der letzte Schuljahreseintrag eines Schülers entfernt, wird auch der Schüler gelöscht.
+Ein Schüler hat je Schuljahr höchstens einen Schuljahreseintrag. Wird der letzte Schuljahreseintrag eines Schülers entfernt, wird auch der Schüler gelöscht. Mit einem Schuljahreseintrag enden die Mitgliedschaften des Schülers in den Lerngruppen dieses Schuljahres.
 
 ### learning_group
 
@@ -211,6 +211,8 @@ Ein Schüler hat je Schuljahr höchstens einen Schuljahreseintrag. Wird der letz
 | `school_year_id` | Fremdschlüssel | ja | Schuljahr |
 | `subject_id` | Fremdschlüssel | ja | Fach |
 | `name` | Text | ja | z. B. "7a/b Technik Gruppe 1", eindeutig je Schuljahr |
+
+Der Name ist je Schuljahr eindeutig, ohne Rücksicht auf Groß- und Kleinschreibung. Listen sortieren Lerngruppen wie Klassen: nach der Zahl am Anfang, dann nach dem Rest. Wird eine Lerngruppe gelöscht, werden ihre Mitgliedschaften mitgelöscht. Sobald Stundenpläne oder Unterrichtsblöcke an ihr hängen, lässt sie sich nicht mehr löschen.
 
 ### group_membership
 
@@ -223,6 +225,11 @@ Ein Schüler hat je Schuljahr höchstens einen Schuljahreseintrag. Wird der letz
 | `left_on` | Datum | nein | Leer bedeutet: bis Schuljahresende |
 
 Ein Schüler kann in mehreren Lerngruppen sein. Die Datumsfelder decken Wechsel während des Schuljahres ab.
+
+- Je Schüler und Lerngruppe kann es mehrere Mitgliedschaften geben, etwa wenn ein Schüler die Gruppe verlässt und später zurückkehrt. Ihre Zeiträume dürfen sich nicht überschneiden. Ein leeres `joined_on` zählt dabei als erster Schultag, ein leeres `left_on` als letzter.
+- Mitglied kann nur werden, wer im Schuljahr der Lerngruppe einen Schuljahreseintrag hat. Eine Klasse braucht er nicht (Z8a).
+- `joined_on` und `left_on` liegen im Schuljahr, und `joined_on` liegt nicht nach `left_on`.
+- Wird ein Schüler aus einem Schuljahr entfernt, enden auch seine Mitgliedschaften in den Lerngruppen dieses Schuljahres.
 
 ### timetable
 

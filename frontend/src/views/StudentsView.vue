@@ -178,7 +178,7 @@ async function imported(count) {
         </p>
       </div>
 
-      <div class="mt-3 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div class="mt-3 relative overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
         <table class="w-full text-left">
           <thead class="border-b border-slate-200 text-sm text-slate-500">
             <tr>
@@ -251,7 +251,7 @@ async function imported(count) {
     <ConfirmDialog
       :open="dialog?.type === 'delete'"
       title="Schüler entfernen?"
-      :message="`„${dialog?.student ? fullName(dialog.student) : ''}“ wird aus dem Schuljahr ${year?.name} entfernt. Gehört der Schüler zu keinem anderen Schuljahr, wird er ganz gelöscht.`"
+      :message="`„${dialog?.student ? fullName(dialog.student) : ''}“ wird aus dem Schuljahr ${year?.name} und aus dessen Lerngruppen entfernt. Gehört der Schüler zu keinem anderen Schuljahr, wird er ganz gelöscht.`"
       confirm-label="Entfernen"
       :busy="busy"
       :error="error"

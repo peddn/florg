@@ -2,7 +2,7 @@
 
 florg ("Fachlehrer Organizer") unterstützt bayerische Fachlehrer bei Jahresplanung, Wochenplanung, Unterrichtsnachweis, Schülerbeobachtung, Zeugnisbemerkungen, Noten und Materialkosten.
 
-Das Projekt ist im Aufbau. Bisher gibt es das Grundgerüst, die Anmeldung, Schuljahre mit Ferien und Feiertagen, die Listen der Fächer und Klassen sowie die Schüler je Schuljahr mit CSV-Import.
+Das Projekt ist im Aufbau. Bisher gibt es das Grundgerüst, die Anmeldung, Schuljahre mit Ferien und Feiertagen, die Listen der Fächer und Klassen, die Schüler je Schuljahr mit CSV-Import sowie die Lerngruppen mit ihren Mitgliedern.
 
 - Konzept und Regeln: [`docs/konzept.md`](docs/konzept.md)
 - Datenmodell: [`docs/datenmodell.md`](docs/datenmodell.md)
@@ -95,7 +95,7 @@ Das Backend kennt neben dem Serverstart zwei Befehle. In der Entwicklung stehen 
 
 ## Beispieldaten
 
-Zum Ausprobieren und Testen füllt ein Befehl die Datenbank mit Beispieldaten: das Schuljahr nach dem laufenden mit Ferien und Feiertagen, vier Fächer, acht Klassen und 140 Schüler mit erfundenen Namen. Jeder Lauf erzeugt dieselben Daten.
+Zum Ausprobieren und Testen füllt ein Befehl die Datenbank mit Beispieldaten: das Schuljahr nach dem laufenden mit Ferien und Feiertagen, vier Fächer, acht Klassen, 140 Schüler mit erfundenen Namen und acht Lerngruppen, davon vier klassenübergreifend. Jeder Lauf erzeugt dieselben Daten.
 
 ```sh
 cd backend
@@ -108,9 +108,10 @@ Enthält die Datenbank schon Fachdaten, bricht der Befehl ab. Mit `--reset` lös
 cargo run -- demo-data --reset
 ```
 
-- `--reset` löscht Schuljahre, unterrichtsfreie Zeiten, Fächer, Klassen und Schüler. Konto und Sitzungen bleiben erhalten, du bleibst also angemeldet.
+- `--reset` löscht Schuljahre, unterrichtsfreie Zeiten, Fächer, Klassen, Schüler und Lerngruppen. Konto und Sitzungen bleiben erhalten, du bleibst also angemeldet.
 - `--reset` ist gesperrt, solange SMTP-Werte gesetzt sind. Das schützt eine Instanz im Betrieb vor einem Versehen.
 - Das Backend darf dabei weiterlaufen. Lade danach die Seite im Browser neu.
+- Offene Anmeldelinks bleiben ebenfalls erhalten und zählen weiter zur Grenze von drei Links in 15 Minuten.
 
 ## Konfiguration
 

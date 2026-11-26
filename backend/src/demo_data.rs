@@ -8,15 +8,21 @@
 //! `clear` here.
 
 use anyhow::{Result, bail};
-use chrono::NaiveDate;
-use sea_orm::{ConnectionTrait, DatabaseConnection, EntityTrait, PaginatorTrait, TransactionTrait};
+use std::collections::HashMap;
+
+use chrono::{Duration, NaiveDate};
+use sea_orm::{
+    ColumnTrait, ConnectionTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
+    TransactionTrait,
+};
 
 use crate::{
     calendar::{self, SchoolYearTemplate},
     entity::{
-        enrollment, school_class, school_free_period, school_year, student, student::FormOfAddress,
-        subject,
+        enrollment, group_membership, learning_group, school_class, school_free_period,
+        school_year, student, student::FormOfAddress, subject,
     },
+    learning_group::{add_period, insert as insert_group, insert_members, set_period},
     school_class::insert as insert_class,
     school_year::insert_with_free_periods,
     student::insert_student,
@@ -41,6 +47,54 @@ const CLASSES: [(&str, usize); 8] = [
     ("9a", 16),
     ("9b", 17),
 ];
+
+/// Which part of a class belongs to a learning group.
+#[derive(Clone, Copy)]
+enum Part {
+    All,
+    /// The first half in list order, rounded up.
+    FirstHalf,
+    SecondHalf,
+}
+
+/// Name of a learning group, short name of its subject, and the classes it
+/// draws its students from.
+type GroupSpec = (&'static str, &'static str, &'static [(&'static str, Part)]);
+
+/// The learning groups. Some span two classes, split in halves.
+const GROUPS: [GroupSpec; 8] = [
+    ("5a Werken", "WG", &[("5a", Part::All)]),
+    ("6a Werken", "WG", &[("6a", Part::All)]),
+    ("7a Technik", "Te", &[("7a", Part::All)]),
+    ("7b Technik", "Te", &[("7b", Part::All)]),
+    (
+        "8a/b Technik Gruppe 1",
+        "Te",
+        &[("8a", Part::FirstHalf), ("8b", Part::FirstHalf)],
+    ),
+    (
+        "8a/b Technik Gruppe 2",
+        "Te",
+        &[("8a", Part::SecondHalf), ("8b", Part::SecondHalf)],
+    ),
+    (
+        "9a/b Ernährung und Soziales",
+        "ES",
+        &[("9a", Part::FirstHalf), ("9b", Part::FirstHalf)],
+    ),
+    (
+        "9a/b BLO-P",
+        "BLO-P",
+        &[("9a", Part::SecondHalf), ("9b", Part::SecondHalf)],
+    ),
+];
+
+/// One student changes from the first to the second of these groups and
+/// later back, as an example of changes during the school year: the last
+/// day in the first group and the first day back, counted in days after the
+/// first school day.
+const GROUP_CHANGE: (&str, &str, i64, i64) =
+    ("8a/b Technik Gruppe 1", "8a/b Technik Gruppe 2", 154, 223);
 
 /// Students that have not been assigned to a class yet.
 const STUDENTS_WITHOUT_CLASS: usize = 2;
@@ -149,6 +203,8 @@ pub struct Counts {
     pub subjects: u64,
     pub school_classes: u64,
     pub students: u64,
+    pub learning_groups: u64,
+    pub group_memberships: u64,
 }
 
 impl Counts {
@@ -161,8 +217,15 @@ impl std::fmt::Display for Counts {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{} Schuljahre, {} unterrichtsfreie Zeiten, {} Fächer, {} Klassen, {} Schüler",
-            self.school_years, self.free_periods, self.subjects, self.school_classes, self.students
+            "{} Schuljahre, {} unterrichtsfreie Zeiten, {} Fächer, {} Klassen, {} Schüler, \
+             {} Lerngruppen mit {} Mitgliedschaften",
+            self.school_years,
+            self.free_periods,
+            self.subjects,
+            self.school_classes,
+            self.students,
+            self.learning_groups,
+            self.group_memberships
         )
     }
 }
@@ -184,12 +247,16 @@ async fn count(db: &impl ConnectionTrait) -> Result<Counts> {
         subjects: subject::Entity::find().count(db).await?,
         school_classes: school_class::Entity::find().count(db).await?,
         students: student::Entity::find().count(db).await?,
+        learning_groups: learning_group::Entity::find().count(db).await?,
+        group_memberships: group_membership::Entity::find().count(db).await?,
     })
 }
 
 /// Deletes all domain data. Account, sessions and login tokens stay (E3).
 async fn clear(db: &impl ConnectionTrait) -> Result<()> {
     // Dependent rows first.
+    group_membership::Entity::delete_many().exec(db).await?;
+    learning_group::Entity::delete_many().exec(db).await?;
     enrollment::Entity::delete_many().exec(db).await?;
     student::Entity::delete_many().exec(db).await?;
     school_free_period::Entity::delete_many().exec(db).await?;
@@ -234,16 +301,20 @@ async fn fill(db: &impl ConnectionTrait, today: NaiveDate) -> Result<String> {
     )
     .await?;
 
+    let mut subject_ids = HashMap::new();
     for (name, short_name) in SUBJECTS {
-        insert_subject(db, name, short_name).await?;
+        let subject = insert_subject(db, name, short_name).await?;
+        subject_ids.insert(short_name, subject.id);
     }
 
+    // Students of each class in the order they were created.
+    let mut students_of: HashMap<&str, Vec<i32>> = HashMap::new();
     let mut index = 0;
     for (class_name, size) in CLASSES {
         let class = insert_class(db, class_name).await?;
         for _ in 0..size {
             let (first_name, last_name, form_of_address) = example_student(index);
-            insert_student(
+            let student_id = insert_student(
                 db,
                 year.id,
                 first_name.to_owned(),
@@ -252,6 +323,7 @@ async fn fill(db: &impl ConnectionTrait, today: NaiveDate) -> Result<String> {
                 Some(class.id),
             )
             .await?;
+            students_of.entry(class_name).or_default().push(student_id);
             index += 1;
         }
     }
@@ -268,6 +340,47 @@ async fn fill(db: &impl ConnectionTrait, today: NaiveDate) -> Result<String> {
         .await?;
         index += 1;
     }
+
+    let mut groups = HashMap::new();
+    for (name, subject, sources) in GROUPS {
+        let group = insert_group(db, year.id, name, subject_ids[subject]).await?;
+        let mut members = Vec::new();
+        for (class_name, part) in sources {
+            let students = &students_of[class_name];
+            let half = students.len().div_ceil(2);
+            members.extend_from_slice(match part {
+                Part::All => students,
+                Part::FirstHalf => &students[..half],
+                Part::SecondHalf => &students[half..],
+            });
+        }
+        insert_members(db, &group, &members).await?;
+        groups.insert(name, (group, members));
+    }
+
+    // The first member of one group changes to another and later returns.
+    let (from, to, left_after, back_after) = GROUP_CHANGE;
+    let (from_group, from_members) = &groups[from];
+    let (to_group, _) = &groups[to];
+    let student_id = from_members[0];
+    let left_on = year.start_date + Duration::days(left_after);
+    let back_on = year.start_date + Duration::days(back_after);
+    let first_period = group_membership::Entity::find()
+        .filter(group_membership::Column::LearningGroupId.eq(from_group.id))
+        .filter(group_membership::Column::StudentId.eq(student_id))
+        .one(db)
+        .await?
+        .expect("the student was just added");
+    set_period(db, first_period.id, None, Some(left_on)).await?;
+    add_period(
+        db,
+        to_group,
+        student_id,
+        Some(left_on + Duration::days(1)),
+        Some(back_on - Duration::days(1)),
+    )
+    .await?;
+    add_period(db, from_group, student_id, Some(back_on), None).await?;
 
     Ok(year.name)
 }

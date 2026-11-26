@@ -85,7 +85,7 @@ function remove() {
     </p>
     <div
       v-else
-      class="mt-4 max-w-2xl overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm"
+      class="mt-4 max-w-2xl relative overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm"
     >
       <table class="w-full text-left">
         <thead class="border-b border-slate-200 text-sm text-slate-500">

@@ -3,6 +3,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import AccountView from '../views/AccountView.vue'
 import ConfirmView from '../views/ConfirmView.vue'
+import LearningGroupsView from '../views/LearningGroupsView.vue'
+import LearningGroupView from '../views/LearningGroupView.vue'
 import LoginView from '../views/LoginView.vue'
 import SchoolClassesView from '../views/SchoolClassesView.vue'
 import SchoolYearsView from '../views/SchoolYearsView.vue'
@@ -19,6 +21,16 @@ const router = createRouter({
     // Pages of one school year carry its id as `yearId`. The header reads it.
     { path: '/schuljahre/:yearId(\\d+)', name: 'schoolYear', component: SchoolYearView },
     { path: '/schuljahre/:yearId(\\d+)/schueler', name: 'students', component: StudentsView },
+    {
+      path: '/schuljahre/:yearId(\\d+)/lerngruppen',
+      name: 'learningGroups',
+      component: LearningGroupsView,
+    },
+    {
+      path: '/schuljahre/:yearId(\\d+)/lerngruppen/:groupId(\\d+)',
+      name: 'learningGroup',
+      component: LearningGroupView,
+    },
     { path: '/faecher', name: 'subjects', component: SubjectsView },
     { path: '/klassen', name: 'schoolClasses', component: SchoolClassesView },
     { path: '/konto', name: 'account', component: AccountView },

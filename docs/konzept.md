@@ -321,7 +321,7 @@ Stufe 1 wäre als ein einziger Pull Request zu groß zum Testen. Sie wird deshal
 | C | Schuljahr und unterrichtsfreie Zeiten, Feiertagsberechnung, Ferien-Datendatei | Schuljahr anlegen, Ferien und Feiertage sind vorgefüllt | erledigt |
 | D1 | Zweite Menüzeile mit Auswahl des Schuljahres, Fächer, Klassen | Schuljahr umschalten, Fächer und Klassen pflegen | erledigt |
 | D2 | Schüler mit Schuljahreseintrag, CSV-Import | Schüler eines Schuljahres pflegen und als Liste einlesen | erledigt |
-| D3 | Lerngruppen mit Mitgliedern | Lerngruppen anlegen und Schüler zuordnen | offen |
+| D3 | Lerngruppen mit Mitgliedern | Lerngruppen anlegen und Schüler zuordnen | erledigt |
 | E | Stundenplan mit A/B-Wochen, Blockerzeugung, Stundenbudget | Alle Blöcke des Jahres und das Budget je Gruppe | offen |
 
 ## 15 Arbeitsregeln für die Umsetzung

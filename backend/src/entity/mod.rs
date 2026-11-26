@@ -2,6 +2,8 @@
 
 pub mod account;
 pub mod enrollment;
+pub mod group_membership;
+pub mod learning_group;
 pub mod login_token;
 pub mod school_class;
 pub mod school_free_period;

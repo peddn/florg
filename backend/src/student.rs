@@ -23,6 +23,7 @@ use crate::{
         student::{self, FormOfAddress},
     },
     error::ApiError,
+    learning_group::remove_student_from_year,
     school_class::{load_all as load_classes, sort_key as class_sort_key},
     student_import,
     validate::MAX_NAME_LENGTH,
@@ -288,14 +289,16 @@ async fn update(
     Ok(Json(row))
 }
 
-/// Removes a student from a school year. A student without any school
-/// year left is deleted as well (data model, `enrollment`).
+/// Removes a student from a school year, including the memberships in its
+/// learning groups. A student without any school year left is deleted as
+/// well (data model, `enrollment`).
 async fn remove(
     State(state): State<AppState>,
     Path((year_id, student_id)): Path<(i32, i32)>,
 ) -> Result<StatusCode, ApiError> {
     let transaction = state.db.begin().await?;
     let entry = find_enrollment(&transaction, year_id, student_id).await?;
+    remove_student_from_year(&transaction, year_id, student_id).await?;
     enrollment::Entity::delete_by_id(entry.id)
         .exec(&transaction)
         .await?;

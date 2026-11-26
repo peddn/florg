@@ -41,11 +41,24 @@ onMounted(() => {
 })
 
 // Opening a page of a school year makes that school year the active one.
+// If the address names a school year that no longer exists, e.g. an old
+// bookmark, the same page opens for the active school year instead.
 watch(
-  () => route.params.yearId,
-  (yearId) => {
-    if (yearId) {
-      schoolYears.setActive(Number(yearId))
+  [() => route.params.yearId, () => schoolYears.list],
+  ([yearId, list]) => {
+    if (!yearId) {
+      return
+    }
+    const id = Number(yearId)
+    if (list === null || list.some((year) => year.id === id)) {
+      schoolYears.setActive(id)
+      return
+    }
+    schoolYears.ensureActive()
+    if (schoolYears.active) {
+      router.replace({ name: route.name, params: { yearId: schoolYears.active.id } })
+    } else {
+      router.replace({ name: 'schoolYears' })
     }
   },
   { immediate: true },

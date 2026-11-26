@@ -65,7 +65,7 @@ pub async fn load_all(db: &impl ConnectionTrait) -> Result<Vec<school_class::Mod
 
 /// Rejects a name that another class already uses.
 async fn ensure_unique(
-    db: &DatabaseConnection,
+    db: &impl ConnectionTrait,
     name: &str,
     except_id: Option<i32>,
 ) -> Result<(), ApiError> {
@@ -93,22 +93,30 @@ async fn list(State(state): State<AppState>) -> Result<Json<Vec<SchoolClass>>, A
     Ok(Json(classes.into_iter().map(Into::into).collect()))
 }
 
-async fn create(
-    State(state): State<AppState>,
-    Json(input): Json<SchoolClassInput>,
-) -> Result<(StatusCode, Json<SchoolClass>), ApiError> {
-    let name = clean_name(&input.name)?;
-    ensure_unique(&state.db, &name, None).await?;
+/// Creates a class after checking the rules of the data model.
+pub async fn insert(
+    db: &impl ConnectionTrait,
+    name: &str,
+) -> Result<school_class::Model, ApiError> {
+    let name = clean_name(name)?;
+    ensure_unique(db, &name, None).await?;
     let now = now();
 
-    let class = school_class::ActiveModel {
+    Ok(school_class::ActiveModel {
         name: Set(name),
         created_at: Set(now),
         updated_at: Set(now),
         ..Default::default()
     }
-    .insert(&state.db)
-    .await?;
+    .insert(db)
+    .await?)
+}
+
+async fn create(
+    State(state): State<AppState>,
+    Json(input): Json<SchoolClassInput>,
+) -> Result<(StatusCode, Json<SchoolClass>), ApiError> {
+    let class = insert(&state.db, &input.name).await?;
     Ok((StatusCode::CREATED, Json(class.into())))
 }
 

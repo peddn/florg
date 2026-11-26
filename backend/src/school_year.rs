@@ -213,25 +213,24 @@ async fn templates() -> Json<&'static [calendar::SchoolYearTemplate]> {
 }
 
 /// Creates a school year and fills in its holidays and public holidays
-/// (D-F1).
-async fn create(
-    State(state): State<AppState>,
-    Json(input): Json<SchoolYearInput>,
-) -> Result<(StatusCode, Json<SchoolYearDetail>), ApiError> {
-    let input = input.validated()?;
+/// (D-F1). The values must already be validated.
+pub async fn insert_with_free_periods(
+    db: &impl ConnectionTrait,
+    name: String,
+    start_date: NaiveDate,
+    end_date: NaiveDate,
+) -> Result<school_year::Model, ApiError> {
     let now = now();
-
-    let transaction = state.db.begin().await?;
-    ensure_name_is_free(&transaction, &input.name, None).await?;
+    ensure_name_is_free(db, &name, None).await?;
     let year = school_year::ActiveModel {
-        name: Set(input.name),
-        start_date: Set(input.start_date),
-        end_date: Set(input.end_date),
+        name: Set(name),
+        start_date: Set(start_date),
+        end_date: Set(end_date),
         created_at: Set(now),
         updated_at: Set(now),
         ..Default::default()
     }
-    .insert(&transaction)
+    .insert(db)
     .await?;
 
     let holidays = calendar::school_holidays_within(year.start_date, year.end_date)
@@ -271,10 +270,21 @@ async fn create(
         .collect();
     if !periods.is_empty() {
         school_free_period::Entity::insert_many(periods)
-            .exec(&transaction)
+            .exec(db)
             .await?;
     }
+    Ok(year)
+}
 
+async fn create(
+    State(state): State<AppState>,
+    Json(input): Json<SchoolYearInput>,
+) -> Result<(StatusCode, Json<SchoolYearDetail>), ApiError> {
+    let input = input.validated()?;
+
+    let transaction = state.db.begin().await?;
+    let year = insert_with_free_periods(&transaction, input.name, input.start_date, input.end_date)
+        .await?;
     let detail = load_detail(&transaction, year.id).await?;
     transaction.commit().await?;
     Ok((StatusCode::CREATED, Json(detail)))

@@ -300,7 +300,7 @@ Stufe 1 wäre als ein einziger Pull Request zu groß zum Testen. Sie wird deshal
 | --- | --- | --- | --- |
 | A | Grundgerüst: Projektstruktur, Backend und Frontend starten, Datenbank wird angelegt | Die Seite lädt und zeigt, dass das Backend antwortet | erledigt |
 | B | Anmeldung: Konto, E-Mail-Link, Sitzung, die zwei Server-Befehle | Anmelden per Link, abmelden, überall abmelden | erledigt |
-| C | Schuljahr und unterrichtsfreie Zeiten, Feiertagsberechnung, Ferien-Datendatei | Schuljahr anlegen, Ferien und Feiertage sind vorgefüllt | offen |
+| C | Schuljahr und unterrichtsfreie Zeiten, Feiertagsberechnung, Ferien-Datendatei | Schuljahr anlegen, Ferien und Feiertage sind vorgefüllt | erledigt |
 | D | Fächer, Klassen, Schüler, Lerngruppen | Stammdaten pflegen | offen |
 | E | Stundenplan mit A/B-Wochen, Blockerzeugung, Stundenbudget | Alle Blöcke des Jahres und das Budget je Gruppe | offen |
 

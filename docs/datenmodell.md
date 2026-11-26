@@ -139,6 +139,8 @@ Eine angemeldete Sitzung auf einem Gerät.
 | `start_date` | Datum | ja | Erster Schultag |
 | `end_date` | Datum | ja | Letzter Schultag |
 
+Der erste Schultag liegt nicht nach dem letzten, und ein Schuljahr ist höchstens 400 Tage lang. Die Sommerferien gehören zu keinem Schuljahr: Sie liegen zwischen dem letzten Schultag des einen und dem ersten Schultag des nächsten.
+
 ### school_free_period
 
 Ferien, Feiertage und andere unterrichtsfreie Tage. Ein einzelner Tag hat gleiches Start- und Enddatum.
@@ -151,6 +153,10 @@ Ferien, Feiertage und andere unterrichtsfreie Tage. Ein einzelner Tag hat gleich
 | `kind` | Text | ja | `holiday`, `public_holiday` oder `other` |
 | `start_date` | Datum | ja | Erster freier Tag |
 | `end_date` | Datum | ja | Letzter freier Tag |
+
+Eine unterrichtsfreie Zeit liegt vollständig im Schuljahr, und ihr erster Tag liegt nicht nach dem letzten. Unterrichtsfreie Zeiten dürfen sich überschneiden, etwa ein Feiertag in den Ferien.
+
+Wird ein Schuljahr gelöscht, werden seine unterrichtsfreien Zeiten mitgelöscht. Sobald Klassen, Lerngruppen oder Stundenpläne an einem Schuljahr hängen, lässt es sich nicht mehr löschen.
 
 ### subject
 
@@ -262,10 +268,14 @@ Je Lerngruppe, Datum und erster Stunde gibt es höchstens einen Block.
 ### Regeln zum Vorfüllen der unterrichtsfreien Zeiten
 
 - D-F1: Beim Anlegen eines Schuljahres füllt florg `school_free_period` vor. Danach sind es normale Einträge, die geändert, gelöscht und ergänzt werden können.
-- D-F2: Feiertage werden berechnet und nicht als Daten mitgeliefert. Sie haben ein festes Datum oder hängen am Osterdatum. Der Buß- und Bettag ist der Mittwoch vor dem 23. November und an bayerischen Schulen unterrichtsfrei.
-- D-F3: Ferien kommen aus einer Datendatei im Repository, abgeschrieben aus der amtlichen Ferienordnung mit Quellenangabe. Die aktuelle Ferienordnung reicht bis zum Schuljahr 2029/30.
+- D-F2: Feiertage werden berechnet und nicht als Daten mitgeliefert. Sie haben ein festes Datum oder hängen am Osterdatum. Berechnet werden: Neujahr, Heilige Drei Könige, Karfreitag, Ostermontag, Tag der Arbeit, Christi Himmelfahrt, Pfingstmontag, Fronleichnam, Tag der Deutschen Einheit, Allerheiligen, Buß- und Bettag, 1. und 2. Weihnachtstag. Der Buß- und Bettag ist der Mittwoch vor dem 23. November und an bayerischen Schulen unterrichtsfrei.
+- D-F2a: Eingetragen werden alle berechneten Feiertage, die im Schuljahr liegen, der Vollständigkeit halber auch solche am Wochenende oder in den Ferien.
+- D-F3: Ferien kommen aus der Datendatei `backend/data/school_holidays_bavaria.json`. Sie wird aus der amtlichen Kalenderdatei des Kultusministeriums erzeugt und nennt Quelle und Abrufdatum. Die aktuelle Ferienordnung reicht bis zum Schuljahr 2029/30.
+- D-F3a: Die Datendatei ist JSON und wird in das Programm eingebaut. Je Schuljahr enthält sie den Namen, den ersten und den letzten Schultag sowie die Ferien mit Name, erstem und letztem Tag. Der Buß- und Bettag steht nicht darin, weil er berechnet wird (D-F2).
+- D-F3b: Die Schuljahre der Datendatei dienen beim Anlegen als Vorlage für Name, ersten und letzten Schultag. Eingetragen werden alle Ferien der Datendatei, die vollständig im angelegten Schuljahr liegen.
 - D-F4: Fehlt ein Schuljahr in der Datendatei, werden die Ferien von Hand eingetragen. Schulinterne freie Tage werden immer von Hand eingetragen.
 - D-F5: Mariä Himmelfahrt und das Augsburger Friedensfest gelten nur regional. Beide liegen in den Sommerferien und werden deshalb nicht gesondert behandelt.
+- D-F6: Ein Schultag ist ein Tag von Montag bis Freitag im Schuljahr, der in keiner unterrichtsfreien Zeit liegt (Regel Z1).
 
 ### Regeln zur Erzeugung der Blöcke
 
@@ -290,5 +300,4 @@ Je Lerngruppe, Datum und erster Stunde gibt es höchstens einen Block.
 
 ## Offene Punkte zu Stufe 1
 
-1. Format der Ferien-Datendatei. Es wird mit der Umsetzung von Stufe 1 festgelegt.
-2. Zählt eine Woche mit nur einem oder zwei Schultagen als Schulwoche für den A/B-Wechsel? Regel D-B1a sagt ja. Das ist an der Schule zu prüfen.
+1. Zählt eine Woche mit nur einem oder zwei Schultagen als Schulwoche für den A/B-Wechsel? Regel D-B1a sagt ja. Das ist an der Schule zu prüfen.

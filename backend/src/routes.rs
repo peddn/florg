@@ -9,7 +9,7 @@ use tower_http::{
     trace::TraceLayer,
 };
 
-use crate::{AppState, auth, school_class, school_year, subject};
+use crate::{AppState, auth, school_class, school_year, student, subject};
 
 /// Builds the application router.
 ///
@@ -23,7 +23,8 @@ pub fn router(state: AppState, frontend_dir: Option<&Path>) -> Router {
     let protected = auth::http::protected_routes()
         .merge(school_year::routes())
         .merge(subject::routes())
-        .merge(school_class::routes());
+        .merge(school_class::routes())
+        .merge(student::routes());
     let protected = auth::http::with_session_check(protected, state.clone());
     let api = Router::new()
         .route("/health", get(health))

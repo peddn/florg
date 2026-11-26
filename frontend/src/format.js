@@ -28,3 +28,19 @@ export const FREE_PERIOD_KINDS = [
 export function kindLabel(kind) {
   return FREE_PERIOD_KINDS.find((entry) => entry.value === kind)?.label ?? kind
 }
+
+// Labels of `student.form_of_address` (concept S7).
+export const FORMS_OF_ADDRESS = [
+  { value: 'he', label: 'er' },
+  { value: 'she', label: 'sie' },
+  { value: 'name_only', label: 'nur Vorname' },
+]
+
+export function addressLabel(value) {
+  return FORMS_OF_ADDRESS.find((entry) => entry.value === value)?.label ?? value
+}
+
+// "Anna Huber", or just the first name if there is no last name.
+export function fullName(student) {
+  return [student.first_name, student.last_name].filter(Boolean).join(' ')
+}

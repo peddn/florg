@@ -19,7 +19,10 @@ const generalLinks = [
 
 // Second row: pages of the active school year. Their routes carry its id
 // as `yearId`.
-const yearLinks = [{ name: 'schoolYear', label: 'Unterrichtsfreie Zeiten' }]
+const yearLinks = [
+  { name: 'students', label: 'Schüler' },
+  { name: 'schoolYear', label: 'Unterrichtsfreie Zeiten' },
+]
 
 const active = computed(() => schoolYears.active)
 

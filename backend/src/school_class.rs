@@ -6,13 +6,16 @@ use axum::{
     http::StatusCode,
     routing::{get, put},
 };
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, IntoActiveModel, Set};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, EntityTrait,
+    IntoActiveModel, PaginatorTrait, QueryFilter, Set,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     AppState,
     db::now,
-    entity::school_class,
+    entity::{enrollment, school_class},
     error::ApiError,
     validate::{clean_name, same_name},
 };
@@ -54,7 +57,7 @@ pub fn sort_key(name: &str) -> (u32, String) {
 }
 
 /// All classes in display order.
-pub async fn load_all(db: &DatabaseConnection) -> Result<Vec<school_class::Model>, ApiError> {
+pub async fn load_all(db: &impl ConnectionTrait) -> Result<Vec<school_class::Model>, ApiError> {
     let mut classes = school_class::Entity::find().all(db).await?;
     classes.sort_by_key(|class| sort_key(&class.name));
     Ok(classes)
@@ -125,13 +128,21 @@ async fn update(
     Ok(Json(class.into()))
 }
 
-// Enrollments do not exist yet. Once they do, a class in use must not be
-// deleted (data model, `school_class`).
+/// Deletes a class unless an enrollment still names it.
 async fn remove(
     State(state): State<AppState>,
     Path(id): Path<i32>,
 ) -> Result<StatusCode, ApiError> {
     find(&state.db, id).await?;
+    let in_use = enrollment::Entity::find()
+        .filter(enrollment::Column::SchoolClassId.eq(id))
+        .count(&state.db)
+        .await?;
+    if in_use > 0 {
+        return Err(ApiError::conflict(
+            "Der Klasse sind noch Schüler zugeordnet. Ordne sie zuerst einer anderen Klasse zu.",
+        ));
+    }
     school_class::Entity::delete_by_id(id)
         .exec(&state.db)
         .await?;

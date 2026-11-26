@@ -246,6 +246,7 @@ Nicht im Startkatalog: 1.1 und alle weiteren entwicklungsbezogenen Abschnitte, 1
 ### Import und Export
 
 - Kataloge, Satzsammlungen, Vorlagen für Lerneinheiten, Notenschlüssel und Kriterienraster sind als Datei austauschbar.
+- Schüler eines Schuljahres lassen sich als CSV einlesen, aus einer Datei oder als eingefügter Text. Vor dem Anlegen zeigt florg eine Vorschau. Die Regeln stehen in `docs/datenmodell.md` (D-I1 bis D-I8).
 - Ob die Lehrplantexte des ISB im Open-Source-Repository mitgeliefert werden dürfen, ist ungeklärt. Bis zur Klärung bleibt der Katalog eine getrennte Importdatei.
 
 ### Bedienung
@@ -309,7 +310,7 @@ Stufe 1 wäre als ein einziger Pull Request zu groß zum Testen. Sie wird deshal
 | B | Anmeldung: Konto, E-Mail-Link, Sitzung, die zwei Server-Befehle | Anmelden per Link, abmelden, überall abmelden | erledigt |
 | C | Schuljahr und unterrichtsfreie Zeiten, Feiertagsberechnung, Ferien-Datendatei | Schuljahr anlegen, Ferien und Feiertage sind vorgefüllt | erledigt |
 | D1 | Zweite Menüzeile mit Auswahl des Schuljahres, Fächer, Klassen | Schuljahr umschalten, Fächer und Klassen pflegen | erledigt |
-| D2 | Schüler mit Schuljahreseintrag, CSV-Import | Schüler eines Schuljahres pflegen und als Liste einlesen | offen |
+| D2 | Schüler mit Schuljahreseintrag, CSV-Import | Schüler eines Schuljahres pflegen und als Liste einlesen | erledigt |
 | D3 | Lerngruppen mit Mitgliedern | Lerngruppen anlegen und Schüler zuordnen | offen |
 | E | Stundenplan mit A/B-Wochen, Blockerzeugung, Stundenbudget | Alle Blöcke des Jahres und das Budget je Gruppe | offen |
 

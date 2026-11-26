@@ -220,12 +220,13 @@ Nicht im Startkatalog: 1.1 und alle weiteren entwicklungsbezogenen Abschnitte, 1
 ### Anmeldung und Sicherheit
 
 - L1: Es gibt nur einen Anmeldeweg: einen Link per E-Mail. Passwörter gibt es nicht.
-- L2: Die Anmeldeseite hat kein Eingabefeld. Der Link geht immer an die im Konto hinterlegte Adresse.
+- L2: Die Anmeldeseite hat ein Eingabefeld für die E-Mail-Adresse. florg verschickt nur dann einen Link, wenn die eingegebene Adresse die des Kontos ist. Groß- und Kleinschreibung spielen keine Rolle. Der Link geht immer an die im Konto hinterlegte Adresse.
+- L2a: Die Antwort auf eine Anforderung ist immer dieselbe und kommt immer gleich schnell: bei passender Adresse, bei falscher Adresse, bei erreichter Grenze (L7), bei fehlendem Konto und bei einem Fehler des Mailversands. So verrät die Anmeldeseite weder die hinterlegte Adresse noch den Zustand der Instanz. Die Ursache steht im Server-Protokoll, die eingegebene Adresse nicht.
 - L3: Ein Anmelde-Token ist zufällig mit mindestens 128 Bit, einmal gültig und läuft nach 15 Minuten ab.
 - L4: In der Datenbank steht nur der Hash des Tokens.
 - L5: Der Link funktioniert nur in dem Browser, der ihn angefordert hat.
 - L6: Der Link meldet nicht direkt an, sondern führt auf eine Seite mit Bestätigungsknopf. So verbrauchen Mail-Scanner das Token nicht.
-- L7: Anforderungen von Links sind begrenzt, damit niemand das Postfach flutet: höchstens 3 Anforderungen in 15 Minuten.
+- L7: Anforderungen von Links sind begrenzt, damit niemand das Postfach flutet: höchstens 3 Links in 15 Minuten. Es zählen nur Anforderungen mit der Adresse des Kontos. Wer die Adresse nicht kennt, löst keine Mail aus und kann die Grenze nicht ausschöpfen.
 - L8: Eine Sitzung gilt 30 Tage ab der letzten Nutzung. Das Sitzungs-Cookie ist `HttpOnly`, `Secure` und `SameSite`.
 - L9: "Abmelden" ist der Standard und beendet nur die Sitzung des aktuellen Geräts. "Überall abmelden" ist die zweite, zurückhaltend dargestellte Option und beendet sofort alle Sitzungen. Eine Liste einzelner Geräte gibt es nicht.
 - L10: Die Anwendung ist nur über HTTPS erreichbar. Im Betrieb übernimmt das ein vorgeschalteter Reverse-Proxy; florg selbst lauscht nur lokal. Die öffentliche Adresse steht in der Konfiguration (`FLORG_PUBLIC_URL`). Anmeldelinks werden nur aus ihr gebildet, nie aus Angaben der Anfrage.
@@ -273,7 +274,7 @@ Nicht im Startkatalog: 1.1 und alle weiteren entwicklungsbezogenen Abschnitte, 1
 5. Die 130 Satzbausteine für den Startkatalog müssen geschrieben werden.
 6. Welche Kompetenzen des Startkatalogs werden für die 7. Klasse tatsächlich ausgewählt?
 7. Datenmodell: steht in `docs/datenmodell.md`, im Detail bisher für Stufe 1.
-8. Die Grenze aus L7 gilt für die ganze Instanz, weil die Anmeldeseite kein Eingabefeld hat. Ein Fremder kann sie deshalb ausschöpfen und neue Anmeldungen blockieren; bestehende Sitzungen sind nicht betroffen. Ob eine zusätzliche Grenze je Absenderadresse nötig ist, ist offen.
+8. Wer die Adresse des Kontos kennt, kann die Grenze aus L7 ausschöpfen, so neue Anmeldungen blockieren und Mails auslösen; bestehende Sitzungen sind nicht betroffen. Eine Adresse, die Schüler nicht kennen, erschwert das. Ob zusätzlich bekannte Geräte ein eigenes Kontingent bekommen, ist offen.
 
 ## 14 Umsetzungsreihenfolge
 

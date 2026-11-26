@@ -34,8 +34,11 @@ const newPeriod = { name: '', kind: 'other', start_date: '', end_date: '' }
 const columns = 'md:grid-cols-[minmax(0,1fr)_7rem_minmax(0,24rem)_10rem]'
 
 watch(
-  () => route.params.id,
+  () => route.params.yearId,
   async (id) => {
+    if (!id) {
+      return
+    }
     dialog.value = null
     const result = await store.loadCurrent(id)
     loadError.value = result.message
@@ -103,15 +106,11 @@ function removePeriod() {
 
 <template>
   <main class="mx-auto max-w-6xl p-4">
-    <RouterLink :to="{ name: 'schoolYears' }" class="text-sm text-teal-800 underline">
-      Alle Schuljahre
-    </RouterLink>
-
     <p v-if="loadError" class="mt-4 text-red-700" role="alert">{{ loadError }}</p>
     <p v-else-if="!year" class="mt-4 text-slate-500">Wird geladen …</p>
 
     <template v-else>
-      <section class="mt-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <h1 class="text-2xl font-semibold">Schuljahr {{ year.name }}</h1>
         <p class="mt-1 text-slate-600">{{ formatRange(year.start_date, year.end_date) }}</p>
         <p class="mt-2 text-lg" data-testid="school-days">

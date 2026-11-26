@@ -13,7 +13,10 @@ pub mod error;
 pub mod mail;
 pub mod migration;
 pub mod routes;
+pub mod school_class;
 pub mod school_year;
+pub mod subject;
+pub mod validate;
 
 use sea_orm::DatabaseConnection;
 use tokio_util::task::TaskTracker;

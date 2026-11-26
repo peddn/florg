@@ -8,6 +8,7 @@ use sea_orm_migration::prelude::*;
 
 mod m20261126_000001_create_auth_tables;
 mod m20261126_000002_create_school_year_tables;
+mod m20261126_000003_create_subject_and_school_class;
 
 pub struct Migrator;
 
@@ -17,6 +18,7 @@ impl MigratorTrait for Migrator {
         vec![
             Box::new(m20261126_000001_create_auth_tables::Migration),
             Box::new(m20261126_000002_create_school_year_tables::Migration),
+            Box::new(m20261126_000003_create_subject_and_school_class::Migration),
         ]
     }
 }

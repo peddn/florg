@@ -22,11 +22,11 @@ use crate::{
         school_year,
     },
     error::ApiError,
+    validate::clean_name,
 };
 
 /// Longest school year in days. Guards against typos in the year.
 const MAX_SCHOOL_YEAR_DAYS: i64 = 400;
-const MAX_NAME_LENGTH: usize = 100;
 
 /// Routes of this module. All of them need a session.
 pub fn routes() -> Router<AppState> {
@@ -105,18 +105,6 @@ impl From<school_free_period::Model> for FreePeriod {
             end_date: period.end_date,
         }
     }
-}
-
-/// Trims a name and checks that it is neither empty nor overlong.
-fn clean_name(name: &str) -> Result<String, ApiError> {
-    let name = name.trim();
-    if name.is_empty() {
-        return Err(ApiError::invalid("Der Name fehlt."));
-    }
-    if name.chars().count() > MAX_NAME_LENGTH {
-        return Err(ApiError::invalid("Der Name ist zu lang."));
-    }
-    Ok(name.to_owned())
 }
 
 impl SchoolYearInput {

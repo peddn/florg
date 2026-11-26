@@ -43,7 +43,7 @@ async function create(input) {
   const result = await store.create(input)
   busy.value = false
   if (result.ok) {
-    await router.push({ name: 'schoolYear', params: { id: result.data.id } })
+    await router.push({ name: 'schoolYear', params: { yearId: result.data.id } })
   } else {
     formError.value = result.message
   }
@@ -101,7 +101,7 @@ async function create(input) {
     <ul v-else class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       <li v-for="year in store.list" :key="year.id">
         <RouterLink
-          :to="{ name: 'schoolYear', params: { id: year.id } }"
+          :to="{ name: 'schoolYear', params: { yearId: year.id } }"
           class="block rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-teal-600 active:bg-slate-50"
         >
           <span class="text-lg font-medium text-teal-800">{{ year.name }}</span>

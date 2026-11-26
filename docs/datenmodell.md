@@ -24,12 +24,12 @@ erDiagram
     account ||--o{ login_token : fordert_an
     account ||--o{ session : hat
     school_year ||--o{ school_free_period : hat
-    school_year ||--o{ school_class : hat
     school_year ||--o{ learning_group : hat
     school_year ||--o{ timetable : hat
     subject ||--o{ learning_group : unterrichtet_in
-    school_class ||--o{ class_membership : enthaelt
-    student ||--o{ class_membership : gehoert_zu
+    school_year ||--o{ enrollment : hat
+    student ||--o{ enrollment : hat
+    school_class ||--o{ enrollment : bezeichnet
     learning_group ||--o{ group_membership : enthaelt
     student ||--o{ group_membership : gehoert_zu
     timetable ||--o{ timetable_entry : besteht_aus
@@ -72,7 +72,7 @@ erDiagram
 
 | Stufe | Objekte | Dockt an |
 | --- | --- | --- |
-| 1 Zeitgerüst | `account`, `login_token`, `session`, `school_year`, `school_free_period`, `subject`, `school_class`, `student`, `class_membership`, `learning_group`, `group_membership`, `timetable`, `timetable_entry`, `lesson_block` | – |
+| 1 Zeitgerüst | `account`, `login_token`, `session`, `school_year`, `school_free_period`, `subject`, `school_class`, `student`, `enrollment`, `learning_group`, `group_membership`, `timetable`, `timetable_entry`, `lesson_block` | – |
 | 2 Jahresplanung | `catalog`, `section`, `competency`, `content_item`, `topic_area`, `learning_unit` sowie die Zuordnungen von Kompetenzen zu Lerngruppe, Themenbereich und Lerneinheit | `learning_group`, `lesson_block` |
 | 3 Unterrichtsnachweis | `lesson_record`, `absence` | `lesson_block`, `student` |
 | 4 Beobachtung | `observation`, `note` | `lesson_block`, `student`, `competency` |
@@ -156,7 +156,7 @@ Ferien, Feiertage und andere unterrichtsfreie Tage. Ein einzelner Tag hat gleich
 
 Eine unterrichtsfreie Zeit liegt vollständig im Schuljahr, und ihr erster Tag liegt nicht nach dem letzten. Unterrichtsfreie Zeiten dürfen sich überschneiden, etwa ein Feiertag in den Ferien.
 
-Wird ein Schuljahr gelöscht, werden seine unterrichtsfreien Zeiten mitgelöscht. Sobald Klassen, Lerngruppen oder Stundenpläne an einem Schuljahr hängen, lässt es sich nicht mehr löschen.
+Wird ein Schuljahr gelöscht, werden seine unterrichtsfreien Zeiten mitgelöscht. Sobald Schuljahreseinträge, Lerngruppen oder Stundenpläne an einem Schuljahr hängen, lässt es sich nicht mehr löschen.
 
 ### subject
 
@@ -164,18 +164,20 @@ Wird ein Schuljahr gelöscht, werden seine unterrichtsfreien Zeiten mitgelöscht
 | --- | --- | --- | --- |
 | `id` | Ganzzahl | ja | Primärschlüssel |
 | `name` | Text | ja | z. B. "Berufs- und Lebensorientierung – Praxis" |
-| `short_name` | Text | ja | z. B. "BLO-P", für die mobile Ansicht |
+| `short_name` | Text | ja | z. B. "BLO-P", für enge Darstellungen wie den Stundenplan; höchstens 10 Zeichen |
+
+Name und Kürzel sind jeweils eindeutig, ohne Rücksicht auf Groß- und Kleinschreibung. Ein Fach lässt sich nicht löschen, solange eine Lerngruppe es nutzt.
 
 ### school_class
 
-Eine Klasse in einem Schuljahr. Die "7a" des nächsten Jahres ist ein neuer Datensatz.
+Die Bezeichnung einer Klasse. Sie gilt über Schuljahre hinweg: Die "7a" wird einmal angelegt und jedes Jahr wieder verwendet. Welcher Schüler in welchem Schuljahr in welcher Klasse ist, steht im Schuljahreseintrag (`enrollment`).
 
 | Feld | Typ | Pflicht | Bedeutung |
 | --- | --- | --- | --- |
 | `id` | Ganzzahl | ja | Primärschlüssel |
-| `school_year_id` | Fremdschlüssel | ja | Schuljahr |
-| `name` | Text | ja | z. B. "7a", eindeutig je Schuljahr |
-| `grade_level` | Ganzzahl | ja | Jahrgangsstufe |
+| `name` | Text | ja | z. B. "7a", eindeutig ohne Rücksicht auf Groß- und Kleinschreibung |
+
+Eine Klasse lässt sich nicht löschen, solange ein Schuljahreseintrag sie nennt. Listen sortieren Klassen nach der Zahl am Anfang, dann nach dem Rest: "7a" steht vor "10a".
 
 ### student
 
@@ -186,17 +188,18 @@ Eine Klasse in einem Schuljahr. Die "7a" des nächsten Jahres ist ein neuer Date
 | `last_name` | Text | nein | Nachname; leer bei Arbeit mit Kürzeln |
 | `form_of_address` | Text | ja | `he`, `she` oder `name_only` (Regel S7) |
 
-### class_membership
+### enrollment
 
-Welcher Schüler in welchem Schuljahr in welcher Klasse ist.
+Ein Schüler in einem Schuljahr (Schuljahreseintrag), optional mit seiner Klasse.
 
 | Feld | Typ | Pflicht | Bedeutung |
 | --- | --- | --- | --- |
 | `id` | Ganzzahl | ja | Primärschlüssel |
 | `student_id` | Fremdschlüssel | ja | Schüler |
-| `school_class_id` | Fremdschlüssel | ja | Klasse; das Schuljahr ergibt sich aus der Klasse |
+| `school_year_id` | Fremdschlüssel | ja | Schuljahr |
+| `school_class_id` | Fremdschlüssel | nein | Klasse in diesem Schuljahr; leer bedeutet: ohne Klasse |
 
-Ein Schüler ist je Schuljahr in höchstens einer Klasse.
+Ein Schüler hat je Schuljahr höchstens einen Schuljahreseintrag. Wird der letzte Schuljahreseintrag eines Schülers entfernt, wird auch der Schüler gelöscht.
 
 ### learning_group
 
@@ -290,6 +293,8 @@ Je Lerngruppe, Datum und erster Stunde gibt es höchstens einen Block.
 
 ## Bewusst weggelassen in Stufe 1
 
+- **Klasse je Schuljahr als eigenes Objekt und Jahrgangsstufe.** Die Klasse ist eine Bezeichnung (Z8a). Der Lehrplan hängt an der Lerngruppe (K2). Braucht eine Klasse später Angaben je Schuljahr, kommt eine Tabelle mit Schuljahr und Klasse dazu, ohne bestehende Daten zu ändern.
+- **Geschlecht.** Gespeichert wird die Anrede (Z8b).
 - **Schule als eigenes Objekt.** Eine Instanz bildet eine Schule ab. Wer an mehreren Schulen unterrichtet, betreibt mehrere Instanzen.
 - **Gerätebezeichnung an der Sitzung.** "Überall abmelden" genügt.
 - **Uhrzeiten der Stunden.** Stunden sind nummeriert. Uhrzeiten können später als eigene kleine Tabelle dazukommen, ohne bestehende Tabellen zu ändern.

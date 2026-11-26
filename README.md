@@ -2,7 +2,7 @@
 
 florg ("Fachlehrer Organizer") unterstützt bayerische Fachlehrer bei Jahresplanung, Wochenplanung, Unterrichtsnachweis, Schülerbeobachtung, Zeugnisbemerkungen, Noten und Materialkosten.
 
-Das Projekt ist im Aufbau. Bisher gibt es das Grundgerüst, die Anmeldung sowie Schuljahre mit Ferien und Feiertagen.
+Das Projekt ist im Aufbau. Bisher gibt es das Grundgerüst, die Anmeldung, Schuljahre mit Ferien und Feiertagen sowie die Listen der Fächer und Klassen.
 
 - Konzept und Regeln: [`docs/konzept.md`](docs/konzept.md)
 - Datenmodell: [`docs/datenmodell.md`](docs/datenmodell.md)

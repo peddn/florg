@@ -289,6 +289,18 @@ Es gibt keinen Zeitdruck. Die Anwendung wird 2026 nicht produktiv genutzt. Jede 
 
 Das Datenmodell wird grob über alle Stufen entworfen und nur für die jeweils nächste Stufe im Detail festgelegt.
 
+### Aufteilung von Stufe 1
+
+Stufe 1 wäre als ein einziger Pull Request zu groß zum Testen. Sie wird deshalb in fünf Pull Requests umgesetzt. Jeder ist für sich prüfbar.
+
+| Nr. | Inhalt | Was danach testbar ist | Stand |
+| --- | --- | --- | --- |
+| A | Grundgerüst: Projektstruktur, Backend und Frontend starten, Datenbank wird angelegt | Die Seite lädt und zeigt, dass das Backend antwortet | erledigt |
+| B | Anmeldung: Konto, E-Mail-Link, Sitzung, die drei Server-Befehle | Anmelden per Link, überall abmelden | offen |
+| C | Schuljahr und unterrichtsfreie Zeiten, Feiertagsberechnung, Ferien-Datendatei | Schuljahr anlegen, Ferien und Feiertage sind vorgefüllt | offen |
+| D | Fächer, Klassen, Schüler, Lerngruppen | Stammdaten pflegen | offen |
+| E | Stundenplan mit A/B-Wochen, Blockerzeugung, Stundenbudget | Alle Blöcke des Jahres und das Budget je Gruppe | offen |
+
 ## 15 Arbeitsregeln für die Umsetzung
 
 Diese Regeln gelten für die Zusammenarbeit beim Programmieren.

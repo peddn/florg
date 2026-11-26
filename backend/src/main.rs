@@ -76,11 +76,8 @@ async fn serve(config: Config, db: DatabaseConnection) -> Result<()> {
         ),
     }
 
-    let state = AppState {
-        db,
-        mailer,
-        public_url: config.public_url.clone(),
-    };
+    let state = AppState::new(db, mailer, config.public_url.clone());
+    let background = state.background.clone();
     let app = routes::router(state, frontend_dir.map(|dir| dir.as_path()));
 
     let listener = TcpListener::bind(config.bind)
@@ -92,7 +89,12 @@ async fn serve(config: Config, db: DatabaseConnection) -> Result<()> {
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
         .await
-        .context("server error")
+        .context("server error")?;
+
+    // Let mails that are still being sent go out.
+    background.close();
+    background.wait().await;
+    Ok(())
 }
 
 async fn shutdown_signal() {

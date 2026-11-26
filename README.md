@@ -56,11 +56,13 @@ cargo run -- account set --email du@example.org
 
 Ohne eingerichteten Mailversand verschickt florg keine Mail. Der Anmeldelink steht dann im Terminal des Backends:
 
-1. Tippe auf der Anmeldeseite auf "Anmeldelink anfordern".
+1. Gib auf der Anmeldeseite die Adresse des Kontos ein und tippe auf "Anmeldelink anfordern".
 2. Kopiere den Link aus dem Terminal des Backends in denselben Browser.
 3. Bestätige mit "Jetzt anmelden".
 
 Der Link gilt 15 Minuten, nur einmal und nur in dem Browser, der ihn angefordert hat.
+
+Die Anmeldeseite antwortet immer gleich, auch bei falscher Adresse. Kommt kein Link, steht der Grund im Terminal des Backends.
 
 ## Wie im Betrieb starten
 

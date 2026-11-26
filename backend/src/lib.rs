@@ -13,6 +13,7 @@ pub mod migration;
 pub mod routes;
 
 use sea_orm::DatabaseConnection;
+use tokio_util::task::TaskTracker;
 
 use crate::mail::Mailer;
 
@@ -23,4 +24,18 @@ pub struct AppState {
     pub mailer: Mailer,
     /// Public address of the application, without a trailing slash.
     pub public_url: String,
+    /// Work that continues after a response has been sent, such as sending
+    /// a login mail. The server waits for it when shutting down.
+    pub background: TaskTracker,
+}
+
+impl AppState {
+    pub fn new(db: DatabaseConnection, mailer: Mailer, public_url: impl Into<String>) -> Self {
+        Self {
+            db,
+            mailer,
+            public_url: public_url.into(),
+            background: TaskTracker::new(),
+        }
+    }
 }

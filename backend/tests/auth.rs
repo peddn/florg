@@ -14,6 +14,7 @@ use chrono::{Duration, Utc};
 use florg::{
     AppState,
     cli::{self, AccountSet},
+    config::SmtpConfig,
     db,
     entity::{login_token, session},
     mail::{CapturedMail, Mailer},
@@ -21,6 +22,7 @@ use florg::{
 };
 use http_body_util::BodyExt;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, IntoActiveModel, Set};
+use tokio_util::task::TaskTracker;
 use tower::ServiceExt;
 
 const PUBLIC_URL: &str = "https://florg.example.org";
@@ -30,6 +32,7 @@ struct TestApp {
     app: Router,
     db: DatabaseConnection,
     mails: Arc<Mutex<Vec<CapturedMail>>>,
+    background: TaskTracker,
     db_file: std::path::PathBuf,
 }
 
@@ -73,6 +76,11 @@ impl Browser {
 
 impl TestApp {
     async fn new() -> Self {
+        let mails = Arc::new(Mutex::new(Vec::new()));
+        Self::with_mailer(Mailer::Capture(mails.clone()), mails).await
+    }
+
+    async fn with_mailer(mailer: Mailer, mails: Arc<Mutex<Vec<CapturedMail>>>) -> Self {
         static COUNTER: AtomicU32 = AtomicU32::new(0);
         let db_file = std::env::temp_dir().join(format!(
             "florg-test-auth-{}-{}.db",
@@ -83,16 +91,13 @@ impl TestApp {
         let db = db::connect(&format!("sqlite://{}?mode=rwc", db_file.display()))
             .await
             .unwrap();
-        let mails = Arc::new(Mutex::new(Vec::new()));
-        let state = AppState {
-            db: db.clone(),
-            mailer: Mailer::Capture(mails.clone()),
-            public_url: PUBLIC_URL.to_owned(),
-        };
+        let state = AppState::new(db.clone(), mailer, PUBLIC_URL);
+        let background = state.background.clone();
         Self {
             app: routes::router(state, None),
             db,
             mails,
+            background,
             db_file,
         }
     }
@@ -143,11 +148,39 @@ impl TestApp {
         self.send(browser, "POST", uri, None).await
     }
 
-    /// Requests a link and returns the token from the captured mail.
+    /// Submits the login form with `email` and waits until the backend has
+    /// finished its background work.
+    async fn submit_email(&self, browser: &mut Browser, email: &str) -> Response<Body> {
+        let json = serde_json::json!({ "email": email });
+        let response = self
+            .send(browser, "POST", "/api/auth/request-link", Some(json))
+            .await;
+        self.background.close();
+        self.background.wait().await;
+        self.background.reopen();
+        response
+    }
+
+    /// Requests a link with the right address and returns the token from
+    /// the captured mail.
     async fn request_link(&self, browser: &mut Browser) -> String {
-        let response = self.post(browser, "/api/auth/request-link").await;
+        let before = self.mail_count();
+        let response = self.submit_email(browser, EMAIL).await;
         assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(self.mail_count(), before + 1, "a mail was sent");
         self.last_token()
+    }
+
+    fn mail_count(&self) -> usize {
+        self.mails.lock().unwrap().len()
+    }
+
+    async fn token_count(&self) -> usize {
+        login_token::Entity::find()
+            .all(&self.db)
+            .await
+            .unwrap()
+            .len()
     }
 
     fn last_token(&self) -> String {
@@ -190,7 +223,7 @@ async fn login_by_link_signs_in_and_logout_signs_out() {
     let mut browser = Browser::default();
     assert!(!app.is_authenticated(&mut browser).await);
 
-    let response = app.post(&mut browser, "/api/auth/request-link").await;
+    let response = app.submit_email(&mut browser, EMAIL).await;
     assert_eq!(response.status(), StatusCode::OK);
     assert_eq!(json(response).await["delivery"], "mail");
 
@@ -329,29 +362,128 @@ async fn unknown_token_is_rejected() {
     );
 }
 
-#[tokio::test]
-async fn link_requests_are_limited() {
-    let app = TestApp::with_account().await;
-    let mut browser = Browser::default();
-    for _ in 0..3 {
-        app.request_link(&mut browser).await;
-    }
-
-    let response = app.post(&mut browser, "/api/auth/request-link").await;
-    assert_eq!(response.status(), StatusCode::TOO_MANY_REQUESTS);
-    assert_eq!(json(response).await["error"], "rate_limited");
-    assert_eq!(app.mails.lock().unwrap().len(), 3);
+/// Status, body and the cookies a response sets, without their random values.
+async fn fingerprint(response: Response<Body>) -> (StatusCode, serde_json::Value, Vec<String>) {
+    let status = response.status();
+    let cookies = response
+        .headers()
+        .get_all(header::SET_COOKIE)
+        .iter()
+        .map(|value| {
+            let value = value.to_str().unwrap();
+            let (name, rest) = value.split_once('=').unwrap();
+            let attributes = rest.split_once(';').map(|(_, attributes)| attributes);
+            format!("{name};{}", attributes.unwrap_or_default())
+        })
+        .collect();
+    (status, json(response).await, cookies)
 }
 
 #[tokio::test]
-async fn link_request_without_account_is_refused() {
+async fn link_requests_are_limited_without_telling_the_browser() {
+    let app = TestApp::with_account().await;
+    let mut browser = Browser::default();
+    let first = app.submit_email(&mut browser, EMAIL).await;
+    for _ in 0..2 {
+        app.request_link(&mut browser).await;
+    }
+
+    let limited = app.submit_email(&mut browser, EMAIL).await;
+    assert_eq!(fingerprint(limited).await, fingerprint(first).await);
+    assert_eq!(app.mail_count(), 3);
+    assert_eq!(app.token_count().await, 3);
+}
+
+#[tokio::test]
+async fn wrong_address_sends_nothing_and_looks_the_same() {
+    let app = TestApp::with_account().await;
+    let mut browser = Browser::default();
+    let right = app.submit_email(&mut browser, EMAIL).await;
+    assert_eq!(app.mail_count(), 1);
+
+    let mut stranger = Browser::default();
+    for email in ["fremd@example.org", "", "lehrer@example.org.evil.test"] {
+        let wrong = app.submit_email(&mut stranger, email).await;
+        assert_eq!(wrong.status(), StatusCode::OK);
+        assert!(stranger.has("florg_login"), "binding cookie is set anyway");
+        assert_eq!(app.mail_count(), 1, "no mail for {email:?}");
+        assert_eq!(app.token_count().await, 1, "no token for {email:?}");
+    }
+
+    let wrong = app.submit_email(&mut stranger, "fremd@example.org").await;
+    assert_eq!(fingerprint(wrong).await, fingerprint(right).await);
+}
+
+#[tokio::test]
+async fn wrong_addresses_do_not_use_up_the_limit() {
+    let app = TestApp::with_account().await;
+    let mut stranger = Browser::default();
+    for _ in 0..10 {
+        app.submit_email(&mut stranger, "fremd@example.org").await;
+    }
+
+    // The owner of the account still gets a link.
+    let mut browser = Browser::default();
+    let token = app.request_link(&mut browser).await;
+    assert_eq!(
+        app.confirm(&mut browser, &token).await.status(),
+        StatusCode::NO_CONTENT
+    );
+}
+
+#[tokio::test]
+async fn address_is_matched_without_case_and_spaces() {
+    let app = TestApp::with_account().await;
+    let mut browser = Browser::default();
+
+    app.submit_email(&mut browser, "  Lehrer@Example.ORG ")
+        .await;
+    assert_eq!(app.mail_count(), 1);
+    // The mail goes to the stored address, not to the entered spelling.
+    assert_eq!(app.mails.lock().unwrap()[0].to, EMAIL);
+}
+
+#[tokio::test]
+async fn link_request_without_account_sends_nothing_and_looks_the_same() {
+    let with_account = TestApp::with_account().await;
+    let right = with_account
+        .submit_email(&mut Browser::default(), EMAIL)
+        .await;
+
     let app = TestApp::new().await;
+    let response = app.submit_email(&mut Browser::default(), EMAIL).await;
+    assert_eq!(fingerprint(response).await, fingerprint(right).await);
+    assert_eq!(app.mail_count(), 0);
+}
+
+#[tokio::test]
+async fn link_request_needs_an_address_field() {
+    let app = TestApp::with_account().await;
     let mut browser = Browser::default();
 
     let response = app.post(&mut browser, "/api/auth/request-link").await;
-    assert_eq!(response.status(), StatusCode::CONFLICT);
-    assert_eq!(json(response).await["error"], "no_account");
-    assert!(app.mails.lock().unwrap().is_empty());
+    assert!(response.status().is_client_error());
+    assert_eq!(app.mail_count(), 0);
+}
+
+#[tokio::test]
+async fn failed_mail_does_not_use_up_the_limit() {
+    // Nothing listens on this port, so sending fails at once.
+    let smtp = SmtpConfig {
+        host: "127.0.0.1".to_owned(),
+        port: 9,
+        user: "florg".to_owned(),
+        password: "secret".to_owned(),
+        from: "florg@example.org".to_owned(),
+    };
+    let mailer = Mailer::from_config(Some(&smtp)).unwrap();
+    let app = TestApp::with_mailer(mailer, Arc::default()).await;
+    app.set_email(EMAIL).await;
+
+    let response = app.submit_email(&mut Browser::default(), EMAIL).await;
+    // The browser cannot tell that the mail failed.
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(app.token_count().await, 0);
 }
 
 #[tokio::test]
@@ -439,8 +571,13 @@ async fn changing_the_address_ends_sessions_and_open_links() {
         StatusCode::BAD_REQUEST
     );
 
+    // The old address no longer triggers a mail, the new one does.
     let mut browser = Browser::default();
-    app.request_link(&mut browser).await;
+    let before = app.mail_count();
+    app.submit_email(&mut browser, EMAIL).await;
+    assert_eq!(app.mail_count(), before);
+    app.submit_email(&mut browser, "neu@example.org").await;
+    assert_eq!(app.mail_count(), before + 1);
     assert_eq!(
         app.mails.lock().unwrap().last().unwrap().to,
         "neu@example.org"

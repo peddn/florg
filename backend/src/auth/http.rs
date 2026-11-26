@@ -13,9 +13,9 @@ use axum_extra::extract::{
     cookie::{Cookie, SameSite},
 };
 use serde::{Deserialize, Serialize};
-use tracing::error;
+use tracing::{error, info, warn};
 
-use super::{ActiveSession, AuthError, LOGIN_TOKEN_TTL, SESSION_TTL};
+use super::{ActiveSession, AuthError, LOGIN_TOKEN_TTL, LoginRequestOutcome, SESSION_TTL};
 use crate::{
     AppState,
     mail::{self, Delivery},
@@ -102,16 +102,6 @@ impl IntoResponse for ApiError {
 impl From<AuthError> for ApiError {
     fn from(error: AuthError) -> Self {
         match error {
-            AuthError::NoAccount => Self::new(
-                StatusCode::CONFLICT,
-                "no_account",
-                "Es ist noch kein Konto angelegt. Lege es auf dem Server mit \"florg account set\" an.",
-            ),
-            AuthError::RateLimited => Self::new(
-                StatusCode::TOO_MANY_REQUESTS,
-                "rate_limited",
-                "Es wurden zu viele Anmeldelinks angefordert. Versuche es in 15 Minuten erneut.",
-            ),
             AuthError::InvalidLink => Self::new(
                 StatusCode::BAD_REQUEST,
                 "invalid_link",
@@ -213,47 +203,82 @@ async fn status(State(state): State<AppState>, jar: CookieJar) -> Result<Json<St
     Ok(Json(Status { authenticated }))
 }
 
+#[derive(Deserialize)]
+struct RequestLink {
+    email: String,
+}
+
 #[derive(Serialize)]
 struct LinkRequested {
-    /// "mail" or "log" (rule L11a).
+    /// "mail" or "log" (rule L11a). Depends on the configuration only.
     delivery: &'static str,
 }
 
-/// Sends a login link to the address of the account (rules L2, L5, L7).
+/// Sends a login link if the entered address is the address of the account
+/// (rules L2, L5, L7).
+///
+/// The response is the same in every case and is sent before the address
+/// is even looked at: all further work runs in the background. So neither
+/// the content nor the duration of the response reveals whether the address
+/// was right, whether the limit is exhausted or whether the mail went out.
 async fn request_link(
     State(state): State<AppState>,
     jar: CookieJar,
+    Json(body): Json<RequestLink>,
 ) -> Result<(CookieJar, Json<LinkRequested>), ApiError> {
-    let request = super::request_login(&state.db).await?;
+    let browser_binding = super::new_browser_binding()?;
+
+    let jar = jar.add(cookie(
+        BINDING_COOKIE,
+        browser_binding.clone(),
+        BINDING_COOKIE_PATH,
+        LOGIN_TOKEN_TTL,
+    ));
+    let delivery = match state.mailer.delivery() {
+        Delivery::Mail => "mail",
+        Delivery::Log => "log",
+    };
+
+    let background = state.background.clone();
+    background.spawn(send_login_link(state, body.email, browser_binding));
+
+    Ok((jar, Json(LinkRequested { delivery })))
+}
+
+/// Background part of [`request_link`]. Outcomes are only logged. The
+/// entered address is never logged, because anyone can submit anything.
+async fn send_login_link(state: AppState, email: String, browser_binding: String) {
+    let request = match super::request_login(&state.db, &email, &browser_binding).await {
+        Ok(LoginRequestOutcome::Created(request)) => request,
+        Ok(LoginRequestOutcome::NoAccount) => {
+            warn!("login link requested, but no account exists yet");
+            return;
+        }
+        Ok(LoginRequestOutcome::AddressMismatch) => {
+            info!("login link requested with an address that is not the account's");
+            return;
+        }
+        Ok(LoginRequestOutcome::RateLimited) => {
+            warn!("login link requested, but the request limit is exhausted");
+            return;
+        }
+        Err(error) => {
+            error!("could not create login token: {error:?}");
+            return;
+        }
+    };
 
     // The token sits in the fragment, which browsers never send to a
     // server, so it stays out of access logs.
     let link = format!("{}{CONFIRM_PATH}#token={}", state.public_url, request.token);
     let (subject, body) = mail::login_mail(&link);
-    let delivery = match state.mailer.send(&request.email, subject, &body).await {
-        Ok(delivery) => delivery,
-        Err(error) => {
-            error!("could not send login mail: {error:#}");
-            super::discard_login_request(&state.db, request.token_id).await?;
-            return Err(ApiError::new(
-                StatusCode::BAD_GATEWAY,
-                "mail_failed",
-                "Die Mail konnte nicht verschickt werden. Versuche es später erneut.",
-            ));
+    if let Err(error) = state.mailer.send(&request.email, subject, &body).await {
+        error!("could not send login mail: {error:#}");
+        // A failing mail server must not use up the request limit.
+        if let Err(error) = super::discard_login_request(&state.db, request.token_id).await {
+            error!("could not discard login token: {error:?}");
         }
-    };
-
-    let jar = jar.add(cookie(
-        BINDING_COOKIE,
-        request.browser_binding,
-        BINDING_COOKIE_PATH,
-        LOGIN_TOKEN_TTL,
-    ));
-    let delivery = match delivery {
-        Delivery::Mail => "mail",
-        Delivery::Log => "log",
-    };
-    Ok((jar, Json(LinkRequested { delivery })))
+    }
 }
 
 #[derive(Deserialize)]

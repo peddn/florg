@@ -28,10 +28,6 @@ const SESSION_REFRESH_AFTER: Duration = Duration::hours(1);
 
 #[derive(Debug)]
 pub enum AuthError {
-    /// No account has been created yet.
-    NoAccount,
-    /// Too many login links were requested (rule L7).
-    RateLimited,
     /// The link is unknown, expired, used or opened in another browser.
     /// Deliberately one case, so a response reveals nothing about a token.
     InvalidLink,
@@ -45,12 +41,25 @@ impl From<DbErr> for AuthError {
     }
 }
 
-/// A freshly requested login link. The secrets exist only here: the token
-/// goes into the mail, the browser binding into a cookie.
+/// What a request for a login link led to. The requesting browser never
+/// learns which case occurred (rule L2).
+pub enum LoginRequestOutcome {
+    /// A token was created. Its link still has to be mailed.
+    Created(LoginRequest),
+    /// No account has been created yet.
+    NoAccount,
+    /// The entered address is not the address of the account.
+    AddressMismatch,
+    /// Too many login links were requested (rule L7).
+    RateLimited,
+}
+
+/// A freshly created login token. The token exists only here and in the
+/// mail; the database holds its hash.
 pub struct LoginRequest {
     pub token_id: i32,
     pub token: String,
-    pub browser_binding: String,
+    /// Address of the account, as stored.
     pub email: String,
 }
 
@@ -80,6 +89,17 @@ fn hash_secret(secret: &str) -> String {
     hex::encode(Sha256::digest(secret.as_bytes()))
 }
 
+/// Returns a new value for the cookie that ties a login link to the
+/// requesting browser (rule L5).
+pub fn new_browser_binding() -> Result<String, AuthError> {
+    new_secret()
+}
+
+/// Addresses are compared without regard to case and surrounding spaces.
+fn normalize_email(email: &str) -> String {
+    email.trim().to_lowercase()
+}
+
 /// Returns the account of the instance, if it has been created (D8).
 pub async fn find_account(db: &DatabaseConnection) -> Result<Option<account::Model>, DbErr> {
     account::Entity::find()
@@ -88,9 +108,23 @@ pub async fn find_account(db: &DatabaseConnection) -> Result<Option<account::Mod
         .await
 }
 
-/// Creates a login token for the account (rules L3, L4, L5, L7).
-pub async fn request_login(db: &DatabaseConnection) -> Result<LoginRequest, AuthError> {
-    let account = find_account(db).await?.ok_or(AuthError::NoAccount)?;
+/// Creates a login token if `email` is the address of the account and the
+/// request limit is not exhausted (rules L2, L3, L4, L5, L7).
+///
+/// Only requests with the right address count towards the limit, so someone
+/// who does not know the address cannot use it up.
+pub async fn request_login(
+    db: &DatabaseConnection,
+    email: &str,
+    browser_binding: &str,
+) -> Result<LoginRequestOutcome, AuthError> {
+    let Some(account) = find_account(db).await? else {
+        return Ok(LoginRequestOutcome::NoAccount);
+    };
+    if normalize_email(email) != normalize_email(&account.email) {
+        return Ok(LoginRequestOutcome::AddressMismatch);
+    }
+
     let now = now();
     cleanup(db).await?;
 
@@ -99,15 +133,14 @@ pub async fn request_login(db: &DatabaseConnection) -> Result<LoginRequest, Auth
         .count(db)
         .await?;
     if recent >= LOGIN_REQUEST_LIMIT {
-        return Err(AuthError::RateLimited);
+        return Ok(LoginRequestOutcome::RateLimited);
     }
 
     let token = new_secret()?;
-    let browser_binding = new_secret()?;
     let row = login_token::ActiveModel {
         account_id: Set(account.id),
         token_hash: Set(hash_secret(&token)),
-        browser_binding_hash: Set(hash_secret(&browser_binding)),
+        browser_binding_hash: Set(hash_secret(browser_binding)),
         expires_at: Set(now + LOGIN_TOKEN_TTL),
         used_at: Set(None),
         created_at: Set(now),
@@ -117,12 +150,11 @@ pub async fn request_login(db: &DatabaseConnection) -> Result<LoginRequest, Auth
     .insert(db)
     .await?;
 
-    Ok(LoginRequest {
+    Ok(LoginRequestOutcome::Created(LoginRequest {
         token_id: row.id,
         token,
-        browser_binding,
         email: account.email,
-    })
+    }))
 }
 
 /// Withdraws a login token whose mail could not be sent, so a failing mail
@@ -267,6 +299,18 @@ mod tests {
         let second = new_secret().unwrap();
         assert_eq!(first.len(), 64);
         assert_ne!(first, second);
+    }
+
+    #[test]
+    fn addresses_are_compared_without_case_and_spaces() {
+        assert_eq!(
+            normalize_email("  Lehrer@Example.ORG "),
+            normalize_email("lehrer@example.org")
+        );
+        assert_ne!(
+            normalize_email("lehrer@example.org"),
+            normalize_email("lehrerin@example.org")
+        );
     }
 
     #[test]

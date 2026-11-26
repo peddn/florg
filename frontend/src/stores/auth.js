@@ -16,9 +16,10 @@ export const useAuthStore = defineStore('auth', {
       const result = await api('GET', '/auth/status')
       this.status = result.ok && result.data.authenticated ? 'signedIn' : 'signedOut'
     },
-    // Asks the backend to send a login link to the address of the account.
-    requestLink() {
-      return api('POST', '/auth/request-link')
+    // Asks the backend for a login link. It only sends one if `email` is the
+    // address of the account, and its answer never tells whether it was.
+    requestLink(email) {
+      return api('POST', '/auth/request-link', { email })
     },
     // Redeems the token from a login link.
     async confirm(token) {

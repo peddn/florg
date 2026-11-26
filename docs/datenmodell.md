@@ -226,7 +226,7 @@ Der Name ist je Schuljahr eindeutig, ohne Rücksicht auf Groß- und Kleinschreib
 
 Ein Schüler kann in mehreren Lerngruppen sein. Die Datumsfelder decken Wechsel während des Schuljahres ab.
 
-- Je Schüler und Lerngruppe gibt es höchstens eine Mitgliedschaft.
+- Je Schüler und Lerngruppe kann es mehrere Mitgliedschaften geben, etwa wenn ein Schüler die Gruppe verlässt und später zurückkehrt. Ihre Zeiträume dürfen sich nicht überschneiden. Ein leeres `joined_on` zählt dabei als erster Schultag, ein leeres `left_on` als letzter.
 - Mitglied kann nur werden, wer im Schuljahr der Lerngruppe einen Schuljahreseintrag hat. Eine Klasse braucht er nicht (Z8a).
 - `joined_on` und `left_on` liegen im Schuljahr, und `joined_on` liegt nicht nach `left_on`.
 - Wird ein Schüler aus einem Schuljahr entfernt, enden auch seine Mitgliedschaften in den Lerngruppen dieses Schuljahres.

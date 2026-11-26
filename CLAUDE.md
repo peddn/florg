@@ -13,10 +13,16 @@ Diese Regeln gelten in jeder Sitzung und haben Vorrang vor Tempo.
 
 ## Technik
 
-- Backend: Rust mit SQLite über eine Zwischenschicht. Nur verwenden, was auch PostgreSQL kann (siehe `docs/datenmodell.md`, Grundsätze).
-- Frontend: Vue.js mit Pinia und Router, Tailwind CSS
+- Backend (`backend/`): Rust mit axum und SQLite über SeaORM. Nur verwenden, was auch PostgreSQL kann (siehe `docs/datenmodell.md`, Grundsätze). Schemaänderungen nur als neue Migration in `backend/src/migration/`.
+- Kein handgeschriebenes SQL außerhalb von Migrationen und Verbindungsaufbau; Abfragen laufen über SeaORM.
+- Frontend (`frontend/`): Vue 3 in JavaScript (kein TypeScript) mit Pinia, Vue Router und Tailwind CSS, gebaut mit Vite.
 - Mobile first, kein Offline-Betrieb, eine Instanz pro Lehrer
 - Sicherheit hat Vorrang vor Komfort und Tempo. Anmeldung nur per E-Mail-Link (`docs/konzept.md`, Regeln L1 bis L13). Kryptografie, Zufallszahlen, Hashing und Sitzungsverwaltung nur aus etablierten Bibliotheken, nie selbst schreiben.
+
+## Prüfungen vor jedem Pull Request
+
+- Backend: `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`
+- Frontend: `npm run lint`, `npm run build`
 
 ## Sprache
 

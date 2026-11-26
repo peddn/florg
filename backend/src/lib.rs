@@ -4,13 +4,16 @@
 //! together. Everything else lives here so integration tests can use it.
 
 pub mod auth;
+pub mod calendar;
 pub mod cli;
 pub mod config;
 pub mod db;
 pub mod entity;
+pub mod error;
 pub mod mail;
 pub mod migration;
 pub mod routes;
+pub mod school_year;
 
 use sea_orm::DatabaseConnection;
 use tokio_util::task::TaskTracker;

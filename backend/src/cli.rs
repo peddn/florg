@@ -1,13 +1,13 @@
 //! Command line: the server and the operating commands (rule L12).
 
 use anyhow::{Context, Result, bail};
-use chrono::{SubsecRound, Utc};
 use clap::{Args, Parser, Subcommand};
 use sea_orm::{ActiveModelTrait, DatabaseConnection, IntoActiveModel, Set};
 
 use crate::{
     auth,
     config::Config,
+    db,
     entity::account,
     mail::{self, Delivery, Mailer},
 };
@@ -60,7 +60,7 @@ pub async fn account_set(db: &DatabaseConnection, args: AccountSet) -> Result<()
     if email.parse::<lettre::Address>().is_err() {
         bail!("\"{email}\" ist keine gültige E-Mail-Adresse.");
     }
-    let now = Utc::now().trunc_subsecs(0);
+    let now = db::now();
 
     match auth::find_account(db).await? {
         None => {

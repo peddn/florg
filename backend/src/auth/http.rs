@@ -18,6 +18,7 @@ use tracing::{error, info, warn};
 use super::{ActiveSession, AuthError, LOGIN_TOKEN_TTL, LoginRequestOutcome, SESSION_TTL};
 use crate::{
     AppState,
+    error::ApiError,
     mail::{self, Delivery},
 };
 
@@ -51,54 +52,6 @@ pub fn protected_routes() -> Router<AppState> {
         .route("/auth/logout-all", post(logout_all))
 }
 
-/// Error response of the API: a stable code and a German message for the UI.
-pub struct ApiError {
-    status: StatusCode,
-    code: &'static str,
-    message: &'static str,
-}
-
-impl ApiError {
-    const fn new(status: StatusCode, code: &'static str, message: &'static str) -> Self {
-        Self {
-            status,
-            code,
-            message,
-        }
-    }
-
-    pub const UNAUTHENTICATED: Self = Self::new(
-        StatusCode::UNAUTHORIZED,
-        "unauthenticated",
-        "Du bist nicht angemeldet.",
-    );
-
-    fn internal(error: impl std::fmt::Debug) -> Self {
-        error!("internal error: {error:?}");
-        Self::new(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "internal",
-            "Ein interner Fehler ist aufgetreten.",
-        )
-    }
-}
-
-#[derive(Serialize)]
-struct ErrorBody {
-    error: &'static str,
-    message: &'static str,
-}
-
-impl IntoResponse for ApiError {
-    fn into_response(self) -> Response {
-        let body = ErrorBody {
-            error: self.code,
-            message: self.message,
-        };
-        (self.status, Json(body)).into_response()
-    }
-}
-
 impl From<AuthError> for ApiError {
     fn from(error: AuthError) -> Self {
         match error {
@@ -110,12 +63,6 @@ impl From<AuthError> for ApiError {
             AuthError::Database(error) => Self::internal(error),
             AuthError::Random => Self::internal("no randomness available"),
         }
-    }
-}
-
-impl From<sea_orm::DbErr> for ApiError {
-    fn from(error: sea_orm::DbErr) -> Self {
-        Self::internal(error)
     }
 }
 

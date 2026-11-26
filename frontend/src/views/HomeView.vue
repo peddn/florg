@@ -43,7 +43,7 @@ onMounted(() => health.check())
 </script>
 
 <template>
-  <main class="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 p-6">
+  <main class="mx-auto flex max-w-md flex-col gap-6 p-6">
     <header>
       <h1 class="text-4xl font-semibold tracking-tight text-teal-700">florg</h1>
       <p class="mt-1 text-slate-600">Fachlehrer Organizer</p>

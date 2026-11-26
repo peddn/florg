@@ -188,6 +188,8 @@ Eine Klasse lässt sich nicht löschen, solange ein Schuljahreseintrag sie nennt
 | `last_name` | Text | nein | Nachname; leer bei Arbeit mit Kürzeln |
 | `form_of_address` | Text | ja | `he`, `she` oder `name_only` (Regel S7) |
 
+Ein Schüler entsteht immer zusammen mit einem Schuljahreseintrag. Vor- und Nachname sind jeweils höchstens 100 Zeichen lang. Listen sortieren Schüler nach Klasse, dann Nachname, dann Vorname; Schüler ohne Klasse stehen am Ende.
+
 ### enrollment
 
 Ein Schüler in einem Schuljahr (Schuljahreseintrag), optional mit seiner Klasse.
@@ -279,6 +281,17 @@ Je Lerngruppe, Datum und erster Stunde gibt es höchstens einen Block.
 - D-F4: Fehlt ein Schuljahr in der Datendatei, werden die Ferien von Hand eingetragen. Schulinterne freie Tage werden immer von Hand eingetragen.
 - D-F5: Mariä Himmelfahrt und das Augsburger Friedensfest gelten nur regional. Beide liegen in den Sommerferien und werden deshalb nicht gesondert behandelt.
 - D-F6: Ein Schultag ist ein Tag von Montag bis Freitag im Schuljahr, der in keiner unterrichtsfreien Zeit liegt (Regel Z1).
+
+### Regeln zum CSV-Import der Schüler
+
+- D-I1: Der Import gilt für ein Schuljahr. Er legt je Zeile einen Schüler mit Schuljahreseintrag an.
+- D-I2: Die erste Zeile nennt die Spalten. Ihre Reihenfolge ist frei, Groß- und Kleinschreibung spielen keine Rolle. Bekannt sind `Vorname` (Pflicht), `Nachname`, `Klasse`, `Anrede` und `Geschlecht`. Andere Spalten werden übergangen und in der Vorschau genannt.
+- D-I3: Trennzeichen ist Semikolon, Komma oder Tabulator. florg erkennt es an der ersten Zeile. Werte dürfen in Anführungszeichen stehen.
+- D-I4: `Anrede` kennt "er", "sie" und leer oder "nur Vorname". `Geschlecht` kennt "m", "w" und "d" sowie die ausgeschriebenen Wörter; "d" und leer ergeben "nur Vorname". Sind beide Spalten gefüllt, gilt `Anrede`. Gespeichert wird immer nur die Anrede (Z8b).
+- D-I5: Eine Klasse, die es noch nicht gibt, wird angelegt. Die Vorschau nennt sie vorher.
+- D-I6: Gibt es im Schuljahr schon einen Schüler mit gleichem Vornamen, gleichem Nachnamen und gleicher Klasse, wird die Zeile übersprungen. Dasselbe gilt für eine wiederholte Zeile in der Datei. Groß- und Kleinschreibung spielen dabei keine Rolle.
+- D-I7: Vor dem Anlegen zeigt florg eine Vorschau mit dem Ergebnis je Zeile: neu, schon vorhanden oder fehlerhaft. Hat eine Zeile einen Fehler, wird nichts angelegt.
+- D-I8: Eine Datei hat höchstens 1000 Zeilen. Gelesen wird sie im Backend mit einer etablierten Bibliothek.
 
 ### Regeln zur Erzeugung der Blöcke
 

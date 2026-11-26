@@ -6,7 +6,7 @@
 
 pub mod http;
 
-use chrono::{DateTime, Duration, SubsecRound, Utc};
+use chrono::Duration;
 use rand::{TryRng, rngs::SysRng};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, PaginatorTrait,
@@ -14,7 +14,10 @@ use sea_orm::{
 };
 use sha2::{Digest, Sha256};
 
-use crate::entity::{account, login_token, session};
+use crate::{
+    db::now,
+    entity::{account, login_token, session},
+};
 
 /// Lifetime of a login link (rule L3).
 pub const LOGIN_TOKEN_TTL: Duration = Duration::minutes(15);
@@ -69,11 +72,6 @@ pub struct ActiveSession {
     pub account_id: i32,
     /// The session was extended, so its cookie needs a new lifetime.
     pub refreshed: bool,
-}
-
-/// Timestamps are stored with second precision.
-fn now() -> DateTime<Utc> {
-    Utc::now().trunc_subsecs(0)
 }
 
 /// Returns 256 random bits from the operating system, hex encoded.

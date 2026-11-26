@@ -1,6 +1,11 @@
 // Thin wrapper around fetch for the JSON API of the backend.
 
 const UNREACHABLE = 'Das Backend ist nicht erreichbar.'
+const FAILED = 'Die Anfrage ist fehlgeschlagen.'
+
+// Fired when a request other than the login itself is answered with 401,
+// i.e. the session has ended. `main.js` reacts by showing the login page.
+export const UNAUTHENTICATED_EVENT = 'florg:unauthenticated'
 
 // Sends a request and returns { ok, status, data, message }.
 // `message` is a German text for the user if the request failed.
@@ -23,6 +28,10 @@ export async function api(method, path, body) {
     // Responses without content are fine.
   }
 
-  const message = response.ok ? null : (data?.message ?? UNREACHABLE)
+  if (response.status === 401 && !path.startsWith('/auth/')) {
+    window.dispatchEvent(new Event(UNAUTHENTICATED_EVENT))
+  }
+
+  const message = response.ok ? null : (data?.message ?? FAILED)
   return { ok: response.ok, status: response.status, data, message }
 }

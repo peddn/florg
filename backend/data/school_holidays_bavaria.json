@@ -1,0 +1,134 @@
+{
+  "source": "Bayerisches Staatsministerium für Unterricht und Kultus, Ferientermine als Kalenderdatei, https://www.km.bayern.de/termine/ferien-und-feiertage. Grundlage: Bekanntmachung zur Ferienordnung für die Schuljahre 2024/2025 bis 2029/2030, BayMBl. 2022 Nr. 747.",
+  "retrieved": "2026-11-26",
+  "school_years": [
+    {
+      "name": "2026/27",
+      "first_school_day": "2026-09-15",
+      "last_school_day": "2027-07-30",
+      "holidays": [
+        {
+          "name": "Unterrichtsfreie Tage um Allerheiligen",
+          "start_date": "2026-11-02",
+          "end_date": "2026-11-06"
+        },
+        {
+          "name": "Weihnachtsferien",
+          "start_date": "2026-12-24",
+          "end_date": "2027-01-08"
+        },
+        {
+          "name": "Frühjahrsferien",
+          "start_date": "2027-02-08",
+          "end_date": "2027-02-12"
+        },
+        {
+          "name": "Osterferien",
+          "start_date": "2027-03-22",
+          "end_date": "2027-04-02"
+        },
+        {
+          "name": "Pfingstferien",
+          "start_date": "2027-05-18",
+          "end_date": "2027-05-28"
+        }
+      ]
+    },
+    {
+      "name": "2027/28",
+      "first_school_day": "2027-09-14",
+      "last_school_day": "2028-07-28",
+      "holidays": [
+        {
+          "name": "Unterrichtsfreie Tage um Allerheiligen",
+          "start_date": "2027-11-02",
+          "end_date": "2027-11-05"
+        },
+        {
+          "name": "Weihnachtsferien",
+          "start_date": "2027-12-24",
+          "end_date": "2028-01-07"
+        },
+        {
+          "name": "Frühjahrsferien",
+          "start_date": "2028-02-28",
+          "end_date": "2028-03-03"
+        },
+        {
+          "name": "Osterferien",
+          "start_date": "2028-04-10",
+          "end_date": "2028-04-21"
+        },
+        {
+          "name": "Pfingstferien",
+          "start_date": "2028-06-06",
+          "end_date": "2028-06-16"
+        }
+      ]
+    },
+    {
+      "name": "2028/29",
+      "first_school_day": "2028-09-12",
+      "last_school_day": "2029-07-27",
+      "holidays": [
+        {
+          "name": "Unterrichtsfreie Tage um Allerheiligen",
+          "start_date": "2028-10-30",
+          "end_date": "2028-11-03"
+        },
+        {
+          "name": "Weihnachtsferien",
+          "start_date": "2028-12-23",
+          "end_date": "2029-01-05"
+        },
+        {
+          "name": "Frühjahrsferien",
+          "start_date": "2029-02-12",
+          "end_date": "2029-02-16"
+        },
+        {
+          "name": "Osterferien",
+          "start_date": "2029-03-26",
+          "end_date": "2029-04-06"
+        },
+        {
+          "name": "Pfingstferien",
+          "start_date": "2029-05-22",
+          "end_date": "2029-06-01"
+        }
+      ]
+    },
+    {
+      "name": "2029/30",
+      "first_school_day": "2029-09-11",
+      "last_school_day": "2030-07-26",
+      "holidays": [
+        {
+          "name": "Unterrichtsfreie Tage um Allerheiligen",
+          "start_date": "2029-10-29",
+          "end_date": "2029-11-02"
+        },
+        {
+          "name": "Weihnachtsferien",
+          "start_date": "2029-12-24",
+          "end_date": "2030-01-04"
+        },
+        {
+          "name": "Frühjahrsferien",
+          "start_date": "2030-03-04",
+          "end_date": "2030-03-08"
+        },
+        {
+          "name": "Osterferien",
+          "start_date": "2030-04-15",
+          "end_date": "2030-04-26"
+        },
+        {
+          "name": "Pfingstferien",
+          "start_date": "2030-06-11",
+          "end_date": "2030-06-21"
+        }
+      ]
+    }
+  ]
+}

@@ -9,7 +9,7 @@ use tower_http::{
     trace::TraceLayer,
 };
 
-use crate::{AppState, auth};
+use crate::{AppState, auth, school_year};
 
 /// Builds the application router.
 ///
@@ -20,7 +20,8 @@ pub fn router(state: AppState, frontend_dir: Option<&Path>) -> Router {
     // Unknown API paths answer 404 and never fall through to the frontend.
     // Everything except the health check and the login itself needs a
     // session. New endpoints belong into `protected`.
-    let protected = auth::http::with_session_check(auth::http::protected_routes(), state.clone());
+    let protected = auth::http::protected_routes().merge(school_year::routes());
+    let protected = auth::http::with_session_check(protected, state.clone());
     let api = Router::new()
         .route("/health", get(health))
         .merge(auth::http::public_routes())

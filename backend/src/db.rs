@@ -1,6 +1,7 @@
 //! Database connection and schema setup.
 
 use anyhow::{Context, Result};
+use chrono::{DateTime, SubsecRound, Utc};
 use sea_orm::{ConnectionTrait, Database, DatabaseConnection, DbBackend, Statement};
 use sea_orm_migration::MigratorTrait;
 
@@ -27,4 +28,10 @@ pub async fn connect(database_url: &str) -> Result<DatabaseConnection> {
         .context("could not apply migrations")?;
 
     Ok(db)
+}
+
+/// The current time as stored in the database: UTC with second precision
+/// (data model, D4).
+pub fn now() -> DateTime<Utc> {
+    Utc::now().trunc_subsecs(0)
 }

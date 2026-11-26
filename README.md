@@ -2,7 +2,7 @@
 
 florg ("Fachlehrer Organizer") unterstützt bayerische Fachlehrer bei Jahresplanung, Wochenplanung, Unterrichtsnachweis, Schülerbeobachtung, Zeugnisbemerkungen, Noten und Materialkosten.
 
-Das Projekt ist im Aufbau. Bisher gibt es das Grundgerüst und die Anmeldung, noch ohne Fachfunktionen.
+Das Projekt ist im Aufbau. Bisher gibt es das Grundgerüst, die Anmeldung sowie Schuljahre mit Ferien und Feiertagen.
 
 - Konzept und Regeln: [`docs/konzept.md`](docs/konzept.md)
 - Datenmodell: [`docs/datenmodell.md`](docs/datenmodell.md)
@@ -39,9 +39,11 @@ Terminal 2, Frontend auf http://localhost:5173:
 
 ```sh
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
+
+`npm ci` installiert genau die Versionen aus `package-lock.json` und ändert die Datei nicht. Nach jedem `git pull` mit neuen Abhängigkeiten genügt ein erneutes `npm ci`.
 
 Öffne http://localhost:5173. Anfragen an `/api` leitet der Entwicklungsserver an das Backend weiter.
 
@@ -70,7 +72,7 @@ Im Betrieb liefert das Backend das gebaute Frontend selbst aus. Es läuft also n
 
 ```sh
 cd frontend
-npm install
+npm ci
 npm run build
 cd ../backend
 cargo run --release
@@ -97,6 +99,15 @@ Das Backend liest Umgebungsvariablen, wahlweise aus `backend/.env`. Die Vorlage 
 Für den Mailversand setzt du die SMTP-Werte aus der Vorlage und prüfst sie mit `florg mail test`. Fehlen sie, schreibt florg den Anmeldelink ins Server-Protokoll. Unter systemd liest du es mit `journalctl`. Unvollständige SMTP-Werte verhindern den Start.
 
 Das Protokoll zeigt Meldungen ab der Stufe `info`. Mit der Umgebungsvariable `RUST_LOG` lässt sich das ändern, zum Beispiel `RUST_LOG=debug`.
+
+## Ferien und Feiertage
+
+Beim Anlegen eines Schuljahres trägt florg Ferien und Feiertage ein.
+
+- Feiertage werden berechnet (`backend/src/calendar.rs`).
+- Ferien stehen in [`backend/data/school_holidays_bavaria.json`](backend/data/school_holidays_bavaria.json). Die Datei stammt aus der amtlichen Kalenderdatei des bayerischen Kultusministeriums und nennt Quelle und Abrufdatum. Sie reicht bis zum Schuljahr 2029/30 und wird in das Programm eingebaut.
+
+Erscheint eine neue Ferienordnung, werden die neuen Schuljahre in dieser Datei ergänzt.
 
 ## Prüfungen
 

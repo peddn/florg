@@ -19,6 +19,9 @@ const EXPECTED: Counts = Counts {
     subjects: 4,
     school_classes: 8,
     students: 140,
+    learning_groups: 8,
+    // Everyone with a class is in one group, one student in two.
+    group_memberships: 139,
 };
 
 async fn get(app: &TestApp, browser: &mut common::Browser, uri: &str) -> Value {
@@ -63,6 +66,66 @@ async fn empty_database_is_filled_with_the_next_school_year() {
 
     let subjects = get(&app, &mut browser, "/api/subjects").await;
     assert_eq!(subjects.as_array().unwrap().len(), 4);
+
+    let groups = get(&app, &mut browser, &format!("{year_uri}/learning-groups")).await;
+    let names: Vec<_> = groups
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|group| {
+            format!(
+                "{} ({}, {})",
+                group["name"].as_str().unwrap(),
+                group["subject_short_name"].as_str().unwrap(),
+                group["member_count"]
+            )
+        })
+        .collect();
+    assert_eq!(
+        names,
+        [
+            "5a Werken (WG, 16)",
+            "6a Werken (WG, 17)",
+            "7a Technik (Te, 18)",
+            "7b Technik (Te, 19)",
+            "8a/b Technik Gruppe 1 (Te, 18)",
+            "8a/b Technik Gruppe 2 (Te, 18)",
+            "9a/b BLO-P (BLO-P, 16)",
+            "9a/b Ernährung und Soziales (ES, 17)",
+        ]
+    );
+
+    // One student left group 1 during the year and joined group 2 the
+    // day after.
+    let group_1 = get(
+        &app,
+        &mut browser,
+        &format!("/api/learning-groups/{}", groups[4]["id"]),
+    )
+    .await;
+    let left: Vec<_> = group_1["members"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|member| !member["left_on"].is_null())
+        .collect();
+    assert_eq!(left.len(), 1);
+    assert_eq!(left[0]["left_on"], "2028-02-15");
+    let group_2 = get(
+        &app,
+        &mut browser,
+        &format!("/api/learning-groups/{}", groups[5]["id"]),
+    )
+    .await;
+    let joined: Vec<_> = group_2["members"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|member| !member["joined_on"].is_null())
+        .collect();
+    assert_eq!(joined.len(), 1);
+    assert_eq!(joined[0]["id"], left[0]["id"]);
+    assert_eq!(joined[0]["joined_on"], "2028-02-16");
 }
 
 #[tokio::test]

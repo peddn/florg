@@ -7,14 +7,15 @@ use axum::{
     routing::{get, put},
 };
 use sea_orm::{
-    ActiveModelTrait, ConnectionTrait, DatabaseConnection, EntityTrait, IntoActiveModel, Set,
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, EntityTrait,
+    IntoActiveModel, PaginatorTrait, QueryFilter, Set,
 };
 use serde::{Deserialize, Serialize};
 
 use crate::{
     AppState,
     db::now,
-    entity::subject,
+    entity::{learning_group, subject},
     error::ApiError,
     validate::{clean_name, same_name},
 };
@@ -161,13 +162,21 @@ async fn update(
     Ok(Json(subject.into()))
 }
 
-// Learning groups do not exist yet. Once they do, a subject in use must
-// not be deleted (data model, `subject`).
+/// Deletes a subject unless a learning group still uses it.
 async fn remove(
     State(state): State<AppState>,
     Path(id): Path<i32>,
 ) -> Result<StatusCode, ApiError> {
     find(&state.db, id).await?;
+    let in_use = learning_group::Entity::find()
+        .filter(learning_group::Column::SubjectId.eq(id))
+        .count(&state.db)
+        .await?;
+    if in_use > 0 {
+        return Err(ApiError::conflict(
+            "Das Fach wird noch von einer Lerngruppe genutzt.",
+        ));
+    }
     subject::Entity::delete_by_id(id).exec(&state.db).await?;
     Ok(StatusCode::NO_CONTENT)
 }

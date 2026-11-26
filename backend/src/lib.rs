@@ -11,6 +11,7 @@ pub mod db;
 pub mod demo_data;
 pub mod entity;
 pub mod error;
+pub mod learning_group;
 pub mod mail;
 pub mod migration;
 pub mod routes;

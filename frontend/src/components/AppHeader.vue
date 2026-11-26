@@ -19,11 +19,16 @@ const generalLinks = [
 ]
 
 // Second row: pages of the active school year. Their routes carry its id
-// as `yearId`.
+// as `yearId`. `below` names pages underneath a link, which highlight it too.
 const yearLinks = [
-  { name: 'students', label: 'Schüler' },
-  { name: 'schoolYear', label: 'Unterrichtsfreie Zeiten' },
+  { name: 'students', label: 'Schüler', below: [] },
+  { name: 'learningGroups', label: 'Lerngruppen', below: ['learningGroup'] },
+  { name: 'schoolYear', label: 'Unterrichtsfreie Zeiten', below: [] },
 ]
+
+function isYearLinkActive(link) {
+  return route.name === link.name || link.below.includes(route.name)
+}
 
 const active = computed(() => schoolYears.active)
 
@@ -57,7 +62,8 @@ watch(
     }
     schoolYears.ensureActive()
     if (schoolYears.active) {
-      router.replace({ name: route.name, params: { yearId: schoolYears.active.id } })
+      const link = yearLinks.find(isYearLinkActive)
+      router.replace({ name: link?.name ?? 'schoolYears', params: { yearId: schoolYears.active.id } })
     } else {
       router.replace({ name: 'schoolYears' })
     }
@@ -65,12 +71,15 @@ watch(
   { immediate: true },
 )
 
-// Choosing another school year stays on the same kind of page.
+// Choosing another school year stays on the same kind of page. A page
+// underneath a link, e.g. one learning group, belongs to the old school
+// year, so the list above it opens instead.
 function chooseYear(event) {
   const id = Number(event.target.value)
   schoolYears.setActive(id)
-  if (route.params.yearId) {
-    router.push({ name: route.name, params: { yearId: id } })
+  const link = yearLinks.find(isYearLinkActive)
+  if (link) {
+    router.push({ name: link.name, params: { yearId: id } })
   }
 }
 
@@ -153,8 +162,8 @@ async function logout() {
           v-for="link in yearLinks"
           :key="link.name"
           :to="{ name: link.name, params: { yearId: active.id } }"
-          :class="[linkClass, route.name === link.name ? 'bg-white text-teal-800 shadow-sm' : idleClass]"
-          :aria-current="route.name === link.name ? 'page' : undefined"
+          :class="[linkClass, isYearLinkActive(link) ? 'bg-white text-teal-800 shadow-sm' : idleClass]"
+          :aria-current="isYearLinkActive(link) ? 'page' : undefined"
         >
           {{ link.label }}
         </RouterLink>
